@@ -33,7 +33,7 @@ def get_files_in_dir(dirname):
 def queue_script(script_file, cwd, name="test", prereqs=[], stdout="stdout"):
     os.chdir(cwd)
     #queue_command = "qsub -cwd -j y -b y -q cpu.q -V -N %s -e stderr -o %s " % (name, stdout)
-    queue_command = "qsub -cwd -j y -b y -q mem.q -l vf=7.5G -V -N %s -e stderr -o %s " % (name, stdout)
+    queue_command = "qsub -cwd -j y -b y -q mem.q -l vf=15.5G -V -N %s -e stderr -o %s " % (name, stdout)
     if len(prereqs) > 0:
         queue_command += "-hold_jid %s " % (",".join(prereqs))
     queue_command += "bash '%s'" % (script_file)
