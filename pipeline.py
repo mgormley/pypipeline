@@ -262,7 +262,7 @@ class PipelineRunner:
         stages = []
         stages.append(stage)
         #print "stage.name",stage.name
-        #print "stage.dependents",stage.dependents
+        #print "stage.dependents",[x.name for x in stage.dependents]
         for dependent in stage.dependents:
             for s in self.dfs_stages(dependent):
                 if not s in stages:
@@ -294,6 +294,8 @@ class ExperimentStage(Stage):
     def create_stage_script(self, exp_dir):
         return self.exp_runner.create_experiment_script(self.name, self.experiment, exp_dir)
 
+    def __str__(self):
+        return self.name
 
 class ExperimentRunner(PipelineRunner):
     
@@ -311,7 +313,11 @@ class ExperimentRunner(PipelineRunner):
         all_stages = all_stages[1:]
         exp_tuples = [(stage.name, stage.experiment) for stage in all_stages]
         return self.create_post_processing_script(top_dir, exp_tuples)
-
+    
+    def get_stages_as_list(self, root_stage):
+        '''This method is overriden to give the provided order for experiments'''
+        return self.dfs_stages(root_stage)
+        
     def create_experiment_script(self, name, experiment, exp_dir):
         ''' Override this method '''
         return None
