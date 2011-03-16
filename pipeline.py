@@ -30,10 +30,15 @@ def get_files_in_dir(dirname):
     return [f for f in os.listdir(dirname) if os.path.isfile(os.path.join(dirname, f))]
 
 # TODO: handle resource reqs: qsub -l vf=100M OR qsub -l vf=7.5G
-def queue_script(script_file, cwd, name="test", prereqs=[], stdout="stdout"):
+def queue_script(script_file, cwd, name="test", prereqs=[], stdout="stdout", qsub_args=None):
     os.chdir(cwd)
-    #queue_command = "qsub -cwd -j y -b y -q cpu.q -V -N %s -e stderr -o %s " % (name, stdout)
-    queue_command = "qsub -cwd -j y -b y -q mem.q -q himem.q -l vf=15.5G -V -N %s -e stderr -o %s " % (name, stdout)
+    queue_command = "qsub "
+    if qsub_args:
+        queue_command += " " + qsub_args + " "
+    else:
+        #queue_command += " -q cpu.q "
+        queue_command += " -q mem.q -q himem.q -l vf=15.5G "
+    queue_command += " -cwd -j y -b y -V -N %s -e stderr -o %s " % (name, stdout)        
     if len(prereqs) > 0:
         queue_command += "-hold_jid %s " % (",".join(prereqs))
     queue_command += "bash '%s'" % (script_file)
@@ -54,6 +59,7 @@ class Stage:
         self.prereqs = []
         self.dependents = []
         self.serial = False
+        self.qsub_args = None
 
     def add_prereq(self, stage):
         self.prereqs.append(stage)
@@ -105,7 +111,7 @@ class Stage:
             #Old way: subprocess.check_call(shlex.split(command))
         else:
             prereq_names = [prereq.name for prereq in self.prereqs]
-            queue_script(script_file, cwd, self.name, prereq_names, stdout)
+            queue_script(script_file, cwd, self.name, prereq_names, stdout, self.qsub_args)
 
     def create_stage_script(self, exp_dir):
         ''' Override this method '''
@@ -301,11 +307,14 @@ class ExperimentRunner(PipelineRunner):
     
     def __init__(self,name="experiments",serial=False):
         PipelineRunner.__init__(self, name, serial)
+        self.qsub_args = None
 
     def run_experiments(self, experiments):
         root_stage = RootStage()
         for name,experiment in experiments.items():
             exp_stage = ExperimentStage(name, experiment, self)
+            # Give each experiment stage the global qsub_args 
+            exp_stage.qsub_args = self.qsub_args
             exp_stage.add_prereq(root_stage)
         self.run_pipeline(root_stage)
 
