@@ -230,7 +230,7 @@ class PipelineRunner:
 
     def run_pipeline(self, root_stage):
         self.check_stages(root_stage)
-        top_dir = get_new_directory(self.name)
+        top_dir = get_new_directory(prefix=self.name, dir="exp")
         os.chdir(top_dir)
         self.add_post_processing_stage(root_stage, top_dir)
         for stage in self.get_stages_as_list(root_stage):
