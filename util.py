@@ -39,3 +39,13 @@ def _head_sentences(in_file, out, num_sentences):
             count += 1
         if count == num_sentences:
             break
+
+def sweep_mult(middle_val, factor, num_vals):
+    middle_val,factor = float(middle_val),float(factor)
+    vals = []
+    for i in range(num_vals):
+        vals.append(middle_val * pow(1.0/factor, math.floor(num_vals * 0.5)) * pow(factor,i))
+    return vals
+
+if __name__ == "__main__":
+    print sweep_mult(1, 10, 5)
