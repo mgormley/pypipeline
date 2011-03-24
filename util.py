@@ -48,4 +48,5 @@ def sweep_mult(middle_val, factor, num_vals):
     return vals
 
 if __name__ == "__main__":
-    print sweep_mult(50, 5, 10)
+    for x in sweep_mult(50, 1.5, 10):
+        print x
