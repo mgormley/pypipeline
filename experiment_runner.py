@@ -91,7 +91,8 @@ class ExpParams:
     def get_name(self):
         ''' Returns the name of this experiment '''
         name = []
-        for key,value in self.params.items():
+        for key in self.get_name_key_order():
+            value = self.params[key]
             if key not in self.exclude_name_keys:
                 name.append(self._get_as_str(value))
         return "_".join(name)
@@ -136,6 +137,10 @@ class ExpParams:
             exclude_arg = key in self.exclude_arg_keys
             sps.append((key, self.params[key], exclude_name, exclude_arg))
         return map(lambda x:map(self._get_as_str, x), sps)
+    
+    def get_name_key_order(self):
+        ''' OVERRIDE THIS METHOD '''
+        return sorted(self.params.keys())
     
     def get_instance(self):
         ''' OVERRIDE THIS METHOD '''
