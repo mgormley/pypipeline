@@ -25,13 +25,15 @@ class ExpParams:
     
     def __init__(self, dictionary=None, **keywords):
         self.params = {} #TODO: OrderedDict()
-        self.short_values = {}
+        self.exclude_name_keys = set()
+        self.exclude_arg_keys = set()
         if dictionary:
             self.params.update(dictionary)
         if keywords:
             self.params.update(keywords)
         self.kvsep = "\t"
         self.paramsep = "\n"
+        self.none_string = ""
         
     def __add__(self, other):
         ''' Overloading operator + '''
@@ -44,8 +46,12 @@ class ExpParams:
         '''
         new_exp = self.get_instance()
         new_exp.params.update(self.params)
+        new_exp.exclude_name_keys.update(self.exclude_name_keys)
+        new_exp.exclude_arg_keys.update(self.exclude_arg_keys)
         if isinstance(other, ExpParams):
             new_exp.params.update(other.params)
+            new_exp.exclude_name_keys.update(other.exclude_name_keys)
+            new_exp.exclude_arg_keys.update(other.exclude_arg_keys)
         else:
             new_exp.params.update(other)
         return new_exp
@@ -57,20 +63,51 @@ class ExpParams:
         ''' Adds the keywords as parameters. '''
         self.params.update(keywords)
             
-    def set(self, key, value, short_value=None):
+    def set(self, key, value, incl_name=True, incl_arg=True):
         self.params[key] = value
-        if short_value:
-            self.short_values[key] = short_value
+        if not incl_name:
+            self.exclude_name_keys.add(key)
+        if not incl_arg:
+            self.exclude_arg_keys.add(key)
+        
+    def read(self, path):
+        ''' Read parameter names and values from a file '''
+        filestr = "".join(open(path, 'r').readlines())
+        for param in filestr.split(self.paramsep):
+            for key,value,exclude_name,exclude_arg in param.split(self.kvsep):
+                self.params[key] = self.attempt_to_coerce(value)
+                if exclude_name == "True":
+                    self.exclude_name_keys.add(key)
+                if exclude_arg == "True":
+                    self.exclude_arg_keys.add(key)
 
     def write(self, path):
         ''' Write out parameter names and values to a file '''
         out = open(path, 'w')
-        for key,value in self.params.items():
-            out.write("%s%s%s%s" % (key, self.kvsep, self._get_as_str(value), self.paramsep)) 
+        for key,value,exclude_name,exclude_arg in self._get_string_params():
+            out.write("".join([key, self.kvsep, value, self.kvsep, exclude_name, self.kvsep, exclude_arg, self.paramsep])) 
         out.close()
         
+    def get_name(self):
+        ''' Returns the name of this experiment '''
+        name = []
+        for key,value in self.params.items():
+            if key not in self.exclude_name_keys:
+                name.append(self._get_as_str(value))
+        return "_".join(name)
+    
+    def get_args(self):
+        ''' Returns a string consisting of the arguments defined by the parameters of this experiment '''
+        args = ""
+        for key,value in self.params.items():
+            if key not in self.exclude_arg_keys:
+                args += "--%s %s " % (self._get_as_str(key), self._get_as_str(value))
+        return args
+            
     def _get_as_str(self, value):
         ''' Converts the value to a string '''
+        if value == None:
+            return self.none_string
         if isinstance(value, int):
             return str(value)
         elif isinstance(value, float):
@@ -79,15 +116,10 @@ class ExpParams:
             return value
         else:
             return str(value)
-        
-    def read(self, path):
-        ''' Read parameter names and values from a file '''
-        filestr = "".join(open(path, 'r').readlines())
-        for param in filestr.split(self.paramsep):
-            for key,value in param.split(self.kvsep):
-                self.params[key] = self.attempt_to_coerce(value)
-    
+            
     def _attempt_to_coerce(self, value):
+        if value == self.none_string:
+            return None
         # Note: we could try to first convert to an int,
         # and fall back to a float, but it's probably easier to
         # start with a float and stay there.
@@ -97,23 +129,19 @@ class ExpParams:
             pass
         return value
     
-    def get_name(self):
-        ''' Returns the name of this experiment '''
-        name = map(self._get_as_str, self.params.values())
-        return "_".join(name)
+    def _get_string_params(self):
+        sps = []
+        for key in self.params:
+            exclude_name = key in self.exclude_name_keys
+            exclude_arg = key in self.exclude_arg_keys
+            sps.append((key, self.params[key], exclude_name, exclude_arg))
+        return map(lambda x:map(self._get_as_str, x), sps)
     
-    def get_args(self):
-        ''' Returns a string consisting of the arguments defined by the parameters of this experiment '''
-        args = ""
-        for key,value in self.params.items():
-            args += "--%s=%s " % (key, self._get_as_str(value))
-        return args
-        
     def get_instance(self):
         ''' OVERRIDE THIS METHOD '''
         return ExpParams()
     
-    def create_experiment_script(self, exp_dir):
+    def create_experiment_script(self, exp_dir, eprunner):
         ''' 
         OVERRIDE THIS METHOD. 
         Returns a str to be written out as the experiment script 
@@ -122,15 +150,16 @@ class ExpParams:
 
 class ExpParamsStage(Stage):
     
-    def __init__(self, experiment):
+    def __init__(self, experiment, eprunner):
         Stage.__init__(self, experiment.get_name())
         self.experiment = experiment
+        self.eprunner = eprunner
 
     def create_stage_script(self, exp_dir):
         # Write out the experiment parameters to a file
         self.experiment.write(os.path.join(exp_dir, "expparams.txt"))
         # Create and return the experiment script string
-        return self.experiment.create_experiment_script(exp_dir)
+        return self.experiment.create_experiment_script(exp_dir, self.eprunner)
 
     def __str__(self):
         return self.name
@@ -144,7 +173,7 @@ class ExpParamsRunner(PipelineRunner):
     def run_experiments(self, experiments):
         root_stage = RootStage()
         for experiment in experiments:
-            exp_stage = ExpParamsStage(experiment)
+            exp_stage = ExpParamsStage(experiment,self)
             # Give each experiment stage the global qsub_args 
             exp_stage.qsub_args = self.qsub_args
             exp_stage.add_prereq(root_stage)
