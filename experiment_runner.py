@@ -44,7 +44,10 @@ class ExpParams:
         Returns a copy of self plus all the parameters of other.
         Note that other's params override self.
         '''
-        new_exp = self.get_instance()
+        if isinstance(other, ExpParams):
+            new_exp = other.get_instance()
+        else:
+            new_exp = self.get_instance()
         new_exp.params.update(self.params)
         new_exp.exclude_name_keys.update(self.exclude_name_keys)
         new_exp.exclude_arg_keys.update(self.exclude_arg_keys)
