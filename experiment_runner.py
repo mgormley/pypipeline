@@ -19,7 +19,7 @@ from util import get_new_directory
 from util import get_new_file
 from experiments.core.pipeline import Stage, PipelineRunner, RootStage
 from my_collections.odict import OrderedDict
-
+from collections import defaultdict
 
 class ExpParams:
     
@@ -142,8 +142,20 @@ class ExpParams:
         return map(lambda x:map(self._get_as_str, x), sps)
     
     def get_name_key_order(self):
+        key_order = []
+        initial_keys = self.get_initial_keys()
+        all_keys = sorted(self.params.keys())
+        for key in initial_keys:
+            if key in all_keys:
+                key_order.append(key)
+        for key in all_keys:
+            if key not in initial_keys:
+                key_order.append(key)
+        return key_order
+    
+    def get_initial_keys(self):
         ''' OVERRIDE THIS METHOD '''
-        return sorted(self.params.keys())
+        return []
     
     def get_instance(self):
         ''' OVERRIDE THIS METHOD '''
@@ -172,6 +184,27 @@ class ExpParamsStage(Stage):
     def __str__(self):
         return self.name
 
+def shorten_names(experiments):
+    ''' Shortens the names of a set of experiments '''
+    key2vals = defaultdict(set)
+    for experiment in experiments:
+        for key,value in experiment.params.items():
+            key2vals[key].add(value)
+    
+    nonunique_keys = set()
+    for key in key2vals:
+        if len(key2vals[key]) > 1:
+            nonunique_keys.add(key)
+    
+    kept_keys = set()
+    kept_keys.update(nonunique_keys)
+    for experiment in experiments:
+        kept_keys.update(set(experiment.get_initial_keys()))
+    
+    for experiment in experiments:
+        order = filter(lambda x: x in kept_keys, experiment.get_name_key_order())
+        experiment.get_name_key_order = lambda : order
+
 class ExpParamsRunner(PipelineRunner):
     
     def __init__(self,name="experiments",serial=False):
@@ -179,6 +212,7 @@ class ExpParamsRunner(PipelineRunner):
         self.qsub_args = None
 
     def run_experiments(self, experiments):
+        shorten_names(experiments)
         root_stage = RootStage()
         for experiment in experiments:
             exp_stage = ExpParamsStage(experiment,self)
