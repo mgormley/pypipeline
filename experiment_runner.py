@@ -72,6 +72,14 @@ class ExpParams:
             self.exclude_name_keys.add(key)
         if not incl_arg:
             self.exclude_arg_keys.add(key)
+    
+    def get(self, key):
+        ''' Returns the value with its true type '''
+        return self.params.get(key,None)
+    
+    def getstr(self, key):
+        ''' Returns a string version of the value '''
+        return self._get_as_str(self.get(key))
         
     def read(self, path):
         ''' Read parameter names and values from a file '''
