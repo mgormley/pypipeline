@@ -77,12 +77,14 @@ class ExpParams:
         ''' Read parameter names and values from a file '''
         filestr = "".join(open(path, 'r').readlines())
         for param in filestr.split(self.paramsep):
-            for key,value,exclude_name,exclude_arg in param.split(self.kvsep):
-                self.params[key] = self.attempt_to_coerce(value)
-                if exclude_name == "True":
-                    self.exclude_name_keys.add(key)
-                if exclude_arg == "True":
-                    self.exclude_arg_keys.add(key)
+            if param == '':
+                continue
+            key,value,exclude_name,exclude_arg = param.split(self.kvsep)
+            self.params[key] = self._attempt_to_coerce(value)
+            if exclude_name == "True":
+                self.exclude_name_keys.add(key)
+            if exclude_arg == "True":
+                self.exclude_arg_keys.add(key)
 
     def write(self, path):
         ''' Write out parameter names and values to a file '''
