@@ -18,13 +18,12 @@ import topological
 from util import get_new_directory
 from util import get_new_file
 from experiments.core.pipeline import Stage, PipelineRunner, RootStage
-from my_collections.odict import OrderedDict
 from collections import defaultdict
 
 class ExpParams:
     
     def __init__(self, dictionary=None, **keywords):
-        self.params = {} #TODO: OrderedDict()
+        self.params = {}
         self.exclude_name_keys = set()
         self.exclude_arg_keys = set()
         if dictionary:
