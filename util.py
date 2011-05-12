@@ -1,6 +1,19 @@
 import os
 import math
 
+def fancify_cmd(cmd):
+    script = 'CMD="time ' + cmd + '"\n'
+    script += 'echo $CMD\n'
+    script += '$CMD\n'
+    script += '''
+EXIT=$?
+if [[ $EXIT != 0 ]] ; then
+    echo Error $EXIT
+    exit $EXIT
+fi
+'''
+    return script
+
 def get_new_path(f, prefix="temp", suffix="", dir=None):
     if(dir != None):
         prefix = os.path.join(dir, prefix)
