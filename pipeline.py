@@ -224,9 +224,25 @@ class RootStage(Stage):
 
 class PipelineRunner:
     
-    def __init__(self,name="experiments",serial=False):
+    def __init__(self,name="experiments",queue=None):
         self.name = name
-        self.serial = serial
+        self.serial = (queue == None)
+        
+        self.java_args = " -server -ea -Dfile.encoding=UTF8 "
+        
+        self.queue = queue
+        if self.queue == "mem":
+            self.threads = 4
+            self.qsub_args = " -q mem.q -q himem.q -l num_proc=%d -l h_vmem=8G " % (self.threads)
+            self.java_args += " -Xms6500m -Xmx6500m -XX:MaxPermSize=512m "
+        elif self.queue == "clsp":
+            self.threads = 6
+            self.qsub_args = " -q all.q -pe smp %d -l cpu_arch=x86_64 -l mem_free=8G " % (self.threads)
+            self.java_args += " -Xms6500m -Xmx6500m -XX:MaxPermSize=512m "
+        else: # self.queue == "cpu"
+            self.threads = 1
+            self.qsub_args = " -q cpu.q -l num_proc=%d -l h_vmem=2G " % (self.threads)
+            self.java_args += " -Xms1256m -Xmx1256m -XX:MaxPermSize=256m "
 
     def run_pipeline(self, root_stage):
         self.check_stages(root_stage)
@@ -251,7 +267,7 @@ class PipelineRunner:
                 print "Warning: stage name must begin with a letter: " + stage.name,
                 stage.name = 'a'+stage.name
                 print ". Changing to: " + stage.name + "."
-            assert stage.name not in names, "Multiple stages have the same name: " + stage.name
+            assert stage.name not in names, "Multiple stages have the same name: " + stage.name + "\n" + str([s.name for s in all_stages])
             names.add(stage.name)
         print "all_stages(names):",[stage.name for stage in all_stages]                    
             

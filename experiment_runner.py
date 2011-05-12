@@ -105,7 +105,7 @@ class ExpParams:
         ''' Returns the name of this experiment '''
         name = []
         for key in self.get_name_key_order():
-            value = self.params[key]
+            value = self.get(key)
             if key not in self.exclude_name_keys:
                 name.append(self._get_as_str(value))
         return "_".join(name)
@@ -217,9 +217,8 @@ def shorten_names(experiments):
 
 class ExpParamsRunner(PipelineRunner):
     
-    def __init__(self,name="experiments",serial=False):
-        PipelineRunner.__init__(self, name, serial)
-        self.qsub_args = None
+    def __init__(self,name, queue):
+        PipelineRunner.__init__(self, name, queue)
 
     def run_experiments(self, experiments):
         shorten_names(experiments)
@@ -260,7 +259,11 @@ class ExperimentStage(Stage):
 class ExperimentRunner(PipelineRunner):
     
     def __init__(self,name="experiments",serial=False):
-        PipelineRunner.__init__(self, name, serial)
+        if serial == True:
+            queue = None
+        else:
+            queue = "dummy.q" 
+        PipelineRunner.__init__(self, name, queue)
         self.qsub_args = None
 
     def run_experiments(self, experiments):
