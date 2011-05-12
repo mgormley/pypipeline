@@ -1,5 +1,50 @@
 import os
 import math
+import re
+
+# ------------------- Scraping utilities ------------------------
+
+def to_str(x):
+    if x == None:
+        return ""
+    else:
+        return str(x)
+
+def get_time(stdout_file):
+    lines = open(stdout_file, 'r').readlines()
+    user, system, elapsed = None, None, None
+    for line in lines:
+        match = re.search("(.*)user (.*)system (.*)elapsed", line)
+        if match != None:
+            user = match.group(1)
+            system = match.group(2)
+            elapsed = match.group(3)
+            break
+    return user, system, elapsed
+
+def get_following(stdout_file, prefix, index=0):
+    if not os.path.exists(stdout_file):
+        return None
+    values = get_all_following(stdout_file, prefix)
+    if index < len(values) and index > -len(values):
+        return values[index]
+    # TODO: special case...will this screw things up?
+    if index == -1 and len(values) == 1:
+        return values[0]
+    return None
+
+def get_all_following(stdout_file, prefix):
+    if not os.path.exists(stdout_file):
+        return None
+    values = []
+    lines = open(stdout_file, 'r').readlines()
+    for line in lines:
+        match = re.search(prefix+"(.*)", line)
+        if match != None:
+            values.append(match.group(1))
+    return values
+
+# ------------------- General utilities ------------------------
 
 def fancify_cmd(cmd):
     script = 'CMD="time ' + cmd + '"\n'
