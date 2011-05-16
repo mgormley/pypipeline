@@ -22,6 +22,9 @@ def get_time(stdout_file):
             break
     return user, system, elapsed
 
+def get_following_literal(stdout_file, prefix, index=0):
+    return get_following(stdout_file, re.escape(prefix), index)
+
 def get_following(stdout_file, prefix, index=0):
     if not os.path.exists(stdout_file):
         return None
