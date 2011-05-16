@@ -17,7 +17,7 @@ import glob
 import topological
 from util import get_new_directory
 from util import get_new_file
-from experiments.core.pipeline import Stage, PipelineRunner, RootStage
+from pipeline import Stage, PipelineRunner, RootStage
 from collections import defaultdict
 
 class ExpParams:
