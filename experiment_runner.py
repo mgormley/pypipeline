@@ -72,6 +72,10 @@ class ExpParams:
         if not incl_arg:
             self.exclude_arg_keys.add(key)
     
+    def remove(self, key):
+        if key in self.params:
+            del self.params[key]
+    
     def get(self, key):
         ''' Returns the value with its true type '''
         return self.params.get(key,None)
