@@ -106,7 +106,7 @@ class ExpParams:
         for key in self.get_name_key_order():
             value = self.get(key)
             if key not in self.exclude_name_keys:
-                name.append(self._get_as_str(value))
+                name.append(self._get_as_str(value).replace(",","-"))
         return "_".join(name)
     
     def get_args(self):
