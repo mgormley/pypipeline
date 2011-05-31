@@ -80,6 +80,9 @@ class ExpParams:
         ''' Returns the value with its true type '''
         return self.params.get(key,None)
     
+    def keys(self):
+        return self.params.keys()
+    
     def getstr(self, key):
         ''' Returns a string version of the value '''
         return self._get_as_str(self.get(key))
