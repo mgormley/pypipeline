@@ -108,6 +108,9 @@ def sweep_mult(middle_val, factor, num_vals):
         vals.append(middle_val * pow(1.0/factor, math.floor(num_vals * 0.5)) * pow(factor,i))
     return vals
 
+def sweep_mult_low(low_val, factor, num_vals):
+    return [x for x in sweep_mult(low_val, factor, num_vals*2) if x >= low_val]
+
 if __name__ == "__main__":
-    for x in sweep_mult(1000, 1.5, 10):
+    for x in sweep_mult_low(10, 2, 8):
         print x
