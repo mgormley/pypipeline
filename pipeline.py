@@ -242,7 +242,7 @@ class PipelineRunner:
         else: # self.queue == "cpu"
             self.threads = 1
             self.qsub_args = " -q cpu.q -l num_proc=%d -l h_vmem=2G " % (self.threads)
-            self.java_args += " -Xms1256m -Xmx1256m -XX:MaxPermSize=256m "
+            self.java_args += " -Xms1512m -Xmx1512m -XX:MaxPermSize=256m "
 
     def run_pipeline(self, root_stage):
         self.check_stages(root_stage)
