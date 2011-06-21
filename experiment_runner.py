@@ -19,7 +19,7 @@ from util import get_new_directory
 from util import get_new_file
 from pipeline import Stage, PipelineRunner, RootStage
 from collections import defaultdict
-
+        
 class ExpParams:
     
     def __init__(self, dictionary=None, **keywords):
@@ -184,6 +184,31 @@ class ExpParams:
         '''
         pass
 
+class JavaExpParams(ExpParams):
+    
+    def __init__(self, dictionary=None, **keywords):
+        dictionary.update(keywords)
+        ExpParams.__init__(self,dictionary)
+            
+    def get_java_args(self, eprunner):
+        return self._get_java_args(eprunner.work_mem_megs)
+    
+    def _get_java_args(self, total_work_mem_megs):
+        '''Returns reasonable JVM args based on the total megabytes available'''
+        work_mem_megs = total_work_mem_megs
+        # Subtract off some overhead for the JVM
+        work_mem_megs -= 256
+        # Subtract off some overhead for the PermSize
+        max_perm_size = 256
+        work_mem_megs -= max_perm_size
+        assert(work_mem_megs > 256)
+        
+        java_args = " -server -ea -Dfile.encoding=UTF8 "
+        java_args += " -Xms%dm -Xmx%dm " % (work_mem_megs, work_mem_megs)
+        java_args += " -XX:MaxPermSize=%dm " % (max_perm_size)
+        
+        return java_args
+    
 class ExpParamsStage(Stage):
     
     def __init__(self, experiment, eprunner):

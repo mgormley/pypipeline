@@ -227,22 +227,20 @@ class PipelineRunner:
     def __init__(self,name="experiments",queue=None):
         self.name = name
         self.serial = (queue == None)
-        
-        self.java_args = " -server -ea -Dfile.encoding=UTF8 "
-        
+                
         self.queue = queue
         if self.queue == "mem":
             self.threads = 4
-            self.qsub_args = " -q mem.q -q himem.q -l num_proc=%d -l h_vmem=8G " % (self.threads)
-            self.java_args += " -Xms6500m -Xmx6500m -XX:MaxPermSize=512m "
+            self.work_mem_megs = 8192
+            self.qsub_args = " -q mem.q -q himem.q -l num_proc=%d -l h_vmem=%dM " % (self.threads, self.work_mem_megs)
         elif self.queue == "clsp":
             self.threads = 6
-            self.qsub_args = " -q all.q -pe smp %d -l cpu_arch=x86_64 -l mem_free=8G " % (self.threads)
-            self.java_args += " -Xms6500m -Xmx6500m -XX:MaxPermSize=512m "
+            self.work_mem_megs = 8192
+            self.qsub_args = " -q all.q -pe smp %d -l cpu_arch=x86_64 -l mem_free=%dM " % (self.threads, self.work_mem_megs)
         else: # self.queue == "cpu"
             self.threads = 1
-            self.qsub_args = " -q cpu.q -l num_proc=%d -l h_vmem=2G " % (self.threads)
-            self.java_args += " -Xms1512m -Xmx1512m -XX:MaxPermSize=256m "
+            self.work_mem_megs = 2048
+            self.qsub_args = " -q cpu.q -l num_proc=%d -l h_vmem=%dM " % (self.threads, self.work_mem_megs)
 
     def run_pipeline(self, root_stage):
         self.check_stages(root_stage)
