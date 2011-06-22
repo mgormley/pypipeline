@@ -199,7 +199,7 @@ class JavaExpParams(ExpParams):
         # Subtract off some overhead for the JVM
         work_mem_megs -= 256
         # Subtract off some overhead for the PermSize
-        max_perm_size = 256
+        max_perm_size = 128
         work_mem_megs -= max_perm_size
         assert(work_mem_megs > 256)
         
