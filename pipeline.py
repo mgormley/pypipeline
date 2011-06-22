@@ -237,6 +237,10 @@ class PipelineRunner:
             self.threads = 6
             self.work_mem_megs = 8192
             self.qsub_args = " -q all.q -pe smp %d -l cpu_arch=x86_64 -l mem_free=%dM " % (self.threads, self.work_mem_megs)
+        elif self.queue == "cpu2x":            
+            self.threads = 2
+            self.work_mem_megs = 4096
+            self.qsub_args = " -q cpu.q -l num_proc=%d -l h_vmem=%dM " % (self.threads, self.work_mem_megs)
         else: # self.queue == "cpu"
             self.threads = 1
             self.work_mem_megs = 2048
