@@ -78,7 +78,9 @@ class Stage:
         
     def _run_stage(self, exp_dir):
         ''' Overidden by GridShardRunnerStage '''
-        script = self.create_stage_script(exp_dir)
+        # TODO: ulimit doesn't seem to work on Mac OS X for some reason
+        script = "ulimit -v %d\n\n" % (1024 * self.work_mem_megs)
+        script += self.create_stage_script(exp_dir)
         #TODO: this is a hack. This should wrap the experiment script
         script += "\ntouch '%s'\n" % (self.completion_indicator)        
         script_file = write_script("experiment-script", script, exp_dir)
@@ -258,6 +260,7 @@ class PipelineRunner:
             os.mkdir(cwd)
             stage.serial = self.serial
             stage.cwd = cwd
+            stage.work_mem_megs = self.work_mem_megs
             stage.run_stage(cwd)
 
     def check_stages(self, root_stage):
