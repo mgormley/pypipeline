@@ -9,7 +9,6 @@ import tempfile
 import stat
 import subprocess
 from optparse import OptionParser
-from experiments.run_experiments import SPExpParams
 from glob import glob
 from experiments.core.util import get_all_following, get_following, get_time,\
     to_str, get_following_literal
@@ -65,7 +64,7 @@ class Scraper:
                     exp.set(key.replace("old:",""), value, False, False)
         
         # Choose column header order
-        exp_orderer = SPExpParams()
+        exp_orderer = self.get_exp_params_instance()
         for exp in exp_list:
             exp_orderer = exp_orderer.concat(exp)
         exp_orderer.get_initial_keys = lambda : self.get_column_order()
