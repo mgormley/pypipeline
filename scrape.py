@@ -46,6 +46,8 @@ class Scraper:
                 # Read stdout
                 stdout_file = os.path.join(exp_dir,"stdout")
 
+                self.scrape_errors(exp, exp_dir, stdout_file)
+
                 self.scrape_exp(exp, exp_dir, stdout_file)
                 
             except Exception, e:
@@ -93,11 +95,18 @@ class Scraper:
     def get_exp_params_instance(self):
         ''' OVERRIDE THIS METHOD: return an ExpParams object '''
         return None
-    
-    def scrape_exp(self, exp, exp_dir, stdout_file):
-        ''' OVERRIDE THIS METHOD '''
-        pass
 
     def get_column_order(self):
         ''' OVERRIDE THIS METHOD: return a list of column header strings '''
         return []
+    
+    def scrape_exp(self, exp, exp_dir, stdout_file):
+        ''' OVERRIDE THIS METHOD '''
+        pass
+    
+    def scrape_errors(self, exp, exp_dir, stdout_file):
+        ''' Optionally override this method '''
+        # Check for errors:
+        error = get_following(stdout_file, "Exception in thread \"main\" ", 0, False)
+        if error == None: error = get_following(stdout_file, "Error ", 0, True)
+        exp.update(error = error)

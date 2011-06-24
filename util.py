@@ -22,13 +22,13 @@ def get_time(stdout_file):
             break
     return user, system, elapsed
 
-def get_following_literal(stdout_file, prefix, index=0):
+def get_following_literal(stdout_file, prefix, index=0, include_prefix=False):
     return get_following(stdout_file, re.escape(prefix), index)
 
-def get_following(stdout_file, prefix, index=0):
+def get_following(stdout_file, prefix, index=0, include_prefix=False):
     if not os.path.exists(stdout_file):
         return None
-    values = get_all_following(stdout_file, prefix)
+    values = get_all_following(stdout_file, prefix, include_prefix)
     if index < len(values) and index > -len(values):
         return values[index]
     # TODO: special case...will this screw things up?
@@ -36,13 +36,19 @@ def get_following(stdout_file, prefix, index=0):
         return values[0]
     return None
 
-def get_all_following(stdout_file, prefix):
+def get_all_following(stdout_file, prefix, include_prefix=False):
     if not os.path.exists(stdout_file):
         return None
     values = []
     lines = open(stdout_file, 'r').readlines()
+    
+    if include_prefix:
+        regex = re.compile("("+prefix+".*)")
+    else:
+        regex = re.compile(prefix+"(.*)")
+    
     for line in lines:
-        match = re.search(prefix+"(.*)", line)
+        match = regex.search(line)
         if match != None:
             values.append(match.group(1))
     return values
