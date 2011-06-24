@@ -15,11 +15,12 @@ from experiments.core.util import get_all_following, get_following, get_time,\
 
 class Scraper:
     
-    def __init__(self):
-        pass
+    def __init__(self, print_csv=True, write_google=False):
+        self.sep = ","
+        self.print_csv = print_csv
+        self.write_google = write_google
 
     def scrape(self, top_dir):
-        sep = ","
         exp_dirs = [os.path.join(top_dir,f) for f in os.listdir(top_dir) 
                     if os.path.isdir(os.path.join(top_dir, f)) and f != ".svn"]
         print top_dir
@@ -51,7 +52,8 @@ class Scraper:
                 self.scrape_exp(exp, exp_dir, stdout_file)
                 
             except Exception, e:
-                print sep.join(map(to_str,[exp_dir,"ERROR"]))
+                # TODO: should we post this to Google Spreadsheet?
+                print self.sep.join(map(to_str,[exp_dir,"ERROR"]))
                 import traceback
                 sys.stderr.write(str(e) + '\n')
                 traceback.print_exc()
@@ -81,16 +83,19 @@ class Scraper:
             values_list.append(values)
         values_list = sorted(values_list)
         
-        # Print exp_list
-        def csv_to_str(x):
-            x = exp_orderer._get_as_str(x)
-            if x.find(",") != -1:
-                x = '"%s"' % x
-            return x
-        print sep.join(map(csv_to_str, key_order))
-        for values in values_list:
-            print sep.join(map(csv_to_str, values))
-        print ""
+        if self.print_csv:
+            # Print exp_list
+            def csv_to_str(x):
+                x = exp_orderer._get_as_str(x)
+                if x.find(",") != -1:
+                    x = '"%s"' % x
+                return x
+            print self.sep.join(map(csv_to_str, key_order))
+            for values in values_list:
+                print self.sep.join(map(csv_to_str, values))
+            print ""
+        if self.write_google:
+            pass
     
     def get_exp_params_instance(self):
         ''' OVERRIDE THIS METHOD: return an ExpParams object '''
