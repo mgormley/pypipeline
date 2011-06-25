@@ -81,10 +81,16 @@ def get_first_worksheet(gd_client, key):
     return feed.entry[0].id.text.rsplit('/', 1)[1]
 
 def clear_worksheet(gd_client, key, wksht_id):
-    feed = gd_client.GetListFeed(key, wksht_id)
-    for i, _ in enumerate(feed.entry):
-        # This actually removes the rows, we just want to clear them: 
-        gd_client.DeleteRow(feed.entry[i])
-        entry = gd_client.UpdateRow(feed.entry[i], {})
-        if not isinstance(entry, gdata.spreadsheet.SpreadsheetsList):
-            sys.stderr.write("Error trying to clear row")
+    feed = gd_client.GetCellsFeed(key, wksht_id)
+    for _, entry in enumerate(feed.entry):
+        entry = gd_client.UpdateCell(row=entry.cell.row, col=entry.cell.col, inputValue='', 
+            key=key, wksht_id=wksht_id)
+        if not isinstance(entry, gdata.spreadsheet.SpreadsheetsCell):
+            sys.stderr.write("Error trying to clear row\n")
+            
+def write_row(gd_client, key, wksht_id, row, row_data):
+    for col in range(1, len(row_data)+1):
+        entry = gd_client.UpdateCell(row=row, col=col, inputValue=row_data[col-1], 
+                key=key, wksht_id=wksht_id)
+        if not isinstance(entry, gdata.spreadsheet.SpreadsheetsCell):
+            sys.stderr.write("Error trying to update cell:",row,col)

@@ -12,6 +12,10 @@ from optparse import OptionParser
 from glob import glob
 from experiments.core.util import get_all_following, get_following, get_time,\
     to_str, get_following_literal
+from experiments.core.google_spreadsheets import get_spreadsheet_by_title,\
+    get_first_worksheet, clear_worksheet, write_row
+import getpass
+import gdata.spreadsheet.service
 
 class Scraper:
     
@@ -95,7 +99,32 @@ class Scraper:
                 print self.sep.join(map(csv_to_str, values))
             print ""
         if self.write_google:
-            pass
+            # Establish connection
+            email = 'matthew.gormley@gmail.com'
+            print "Enter password for",email
+            password = getpass.getpass()
+            
+            gd_client = gdata.spreadsheet.service.SpreadsheetsService()
+            gd_client.email = email
+            gd_client.password = password
+            gd_client.source = 'exampleCo-exampleApp-1'
+            gd_client.ProgrammaticLogin()
+    
+            # Get the worksheet
+            skey = get_spreadsheet_by_title(gd_client, "Temporary Results")
+            print "Spreadsheet key:",skey
+            wksht_id = get_first_worksheet(gd_client, skey)
+            print "Worksheet id:",wksht_id
+            
+            # Clear the worksheet
+            clear_worksheet(gd_client, skey, wksht_id)
+            
+            # Update the worksheet
+            write_row(gd_client, skey, wksht_id, 1, key_order)
+            row = 2
+            for values in values_list:
+                write_row(gd_client, skey, wksht_id, row, map(csv_to_str, values))
+                row += 1
     
     def get_exp_params_instance(self):
         ''' OVERRIDE THIS METHOD: return an ExpParams object '''
