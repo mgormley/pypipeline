@@ -23,6 +23,32 @@ class Scraper:
         self.sep = ","
         self.print_csv = print_csv
         self.write_google = write_google
+        if self.write_google:
+            # Get Password
+            email = 'matthew.gormley@gmail.com'
+            print "Enter password for",email
+            password = getpass.getpass()
+            
+            # Establish connection            
+            self.gd_client = gdata.spreadsheet.service.SpreadsheetsService()
+            self.gd_client.email = email
+            self.gd_client.password = password
+            self.gd_client.source = 'exampleCo-exampleApp-1'
+            self.gd_client.ProgrammaticLogin()
+    
+            # Get the worksheet
+            self.skey = get_spreadsheet_by_title(self.gd_client, "Temporary Results")
+            print "Spreadsheet key:",self.skey
+            self.wksht_id = get_first_worksheet(self.gd_client, self.skey)
+            print "Worksheet id:",self.wksht_id
+            
+            # Clear the worksheet
+            clear_worksheet(self.gd_client, self.skey, self.wksht_id)
+            self.row_num = 1
+    
+    def write_row(self, row):
+        write_row(self.gd_client, self.skey, self.wksht_id, self.row_num, row) 
+        self.row_num += 1       
 
     def scrape(self, top_dir):
         exp_dirs = [os.path.join(top_dir,f) for f in os.listdir(top_dir) 
@@ -98,34 +124,13 @@ class Scraper:
             for values in values_list:
                 print self.sep.join(map(csv_to_str, values))
             print ""
+
         if self.write_google:
-            # Establish connection
-            email = 'matthew.gormley@gmail.com'
-            print "Enter password for",email
-            password = getpass.getpass()
-            
-            gd_client = gdata.spreadsheet.service.SpreadsheetsService()
-            gd_client.email = email
-            gd_client.password = password
-            gd_client.source = 'exampleCo-exampleApp-1'
-            gd_client.ProgrammaticLogin()
-    
-            # Get the worksheet
-            skey = get_spreadsheet_by_title(gd_client, "Temporary Results")
-            print "Spreadsheet key:",skey
-            wksht_id = get_first_worksheet(gd_client, skey)
-            print "Worksheet id:",wksht_id
-            
-            # Clear the worksheet
-            clear_worksheet(gd_client, skey, wksht_id)
-            
             # Update the worksheet
-            write_row(gd_client, skey, wksht_id, 1, key_order)
-            row = 2
+            self.write_row(key_order)
             for values in values_list:
-                write_row(gd_client, skey, wksht_id, row, map(csv_to_str, values))
-                row += 1
-    
+                self.write_row(map(csv_to_str, values))
+
     def get_exp_params_instance(self):
         ''' OVERRIDE THIS METHOD: return an ExpParams object '''
         return None
