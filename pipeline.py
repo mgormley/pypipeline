@@ -41,7 +41,7 @@ def queue_script(script_file, cwd, name="test", prereqs=[], stdout="stdout", qsu
     queue_command += " -cwd -j y -b y -V -N %s -e stderr -o %s " % (name, stdout)        
     if len(prereqs) > 0:
         queue_command += "-hold_jid %s " % (",".join(prereqs))
-    queue_command += "bash '%s'" % (script_file)
+    queue_command += "echo JOB_ID=$JOB_ID && bash '%s'" % (script_file)
     print queue_command
     subprocess.check_call(shlex.split(queue_command))
 
@@ -79,7 +79,8 @@ class Stage:
     def _run_stage(self, exp_dir):
         ''' Overidden by GridShardRunnerStage '''
         # TODO: ulimit doesn't seem to work on Mac OS X for some reason
-        script = "ulimit -v %d\n\n" % (1024 * self.work_mem_megs)
+        script = "ulimit -v %d\n" % (1024 * self.work_mem_megs)
+        script += "\n"
         script += self.create_stage_script(exp_dir)
         #TODO: this is a hack. This should wrap the experiment script
         script += "\ntouch '%s'\n" % (self.completion_indicator)        
