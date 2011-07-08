@@ -45,6 +45,7 @@ class Scraper:
             # Clear the worksheet
             clear_worksheet(self.gd_client, self.skey, self.wksht_id)
             self.row_num = 1
+            #TODO: Use self.gd_client.UpdateWorksheet(worksheet_entry) to update the num_rows/num_cols automatically
     
     def write_row(self, row):
         write_row(self.gd_client, self.skey, self.wksht_id, self.row_num, row) 
@@ -126,6 +127,7 @@ class Scraper:
             print ""
 
         if self.write_google:
+            sys.stderr.write("Writing to Google Spreadsheet...\n")
             # Update the worksheet
             self.write_row(key_order)
             for values in values_list:
