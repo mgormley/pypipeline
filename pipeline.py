@@ -232,10 +232,14 @@ class PipelineRunner:
         self.serial = (queue == None)
                 
         self.queue = queue
-        if self.queue == "mem":
+        if self.queue == "himem":
+            self.threads = 6
+            self.work_mem_megs = 32768
+            self.qsub_args = " -q himem.q -l num_proc=%d -l h_vmem=%dM " % (self.threads, self.work_mem_megs)
+        elif self.queue == "mem":
             self.threads = 4
             self.work_mem_megs = 8192
-            self.qsub_args = " -q mem.q -q himem.q -l num_proc=%d -l h_vmem=%dM " % (self.threads, self.work_mem_megs)
+            self.qsub_args = " -q mem.q -l num_proc=%d -l h_vmem=%dM " % (self.threads, self.work_mem_megs)
         elif self.queue == "clsp":
             self.threads = 6
             self.work_mem_megs = 8192
