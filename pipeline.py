@@ -231,15 +231,18 @@ class PipelineRunner:
         self.name = name
         self.serial = (queue == None)
                 
+        def get_coe_qsub_args(queue, threads, work_mem_megs):
+            return " -q %s -l num_proc=%d -l h_vmem=%dM -l virtual_free=%dM " % (queue, threads, work_mem_megs, work_mem_megs)
+        
         self.queue = queue
         if self.queue == "himem":
             self.threads = 6
             self.work_mem_megs = 32768
-            self.qsub_args = " -q himem.q -l num_proc=%d -l h_vmem=%dM " % (self.threads, self.work_mem_megs)
+            self.qsub_args = get_coe_qsub_args("himem.q", self.threads, self.work_mem_megs)
         elif self.queue == "mem":
             self.threads = 4
             self.work_mem_megs = 8192
-            self.qsub_args = " -q mem.q -l num_proc=%d -l h_vmem=%dM " % (self.threads, self.work_mem_megs)
+            self.qsub_args = get_coe_qsub_args("mem.q", self.threads, self.work_mem_megs)
         elif self.queue == "clsp":
             self.threads = 6
             self.work_mem_megs = 8192
@@ -247,11 +250,11 @@ class PipelineRunner:
         elif self.queue == "cpu2x":            
             self.threads = 2
             self.work_mem_megs = 4096
-            self.qsub_args = " -q cpu.q -l num_proc=%d -l h_vmem=%dM " % (self.threads, self.work_mem_megs)
+            self.qsub_args = get_coe_qsub_args("cpu.q", self.threads, self.work_mem_megs)
         else: # self.queue == "cpu"
             self.threads = 1
             self.work_mem_megs = 2048
-            self.qsub_args = " -q cpu.q -l num_proc=%d -l h_vmem=%dM " % (self.threads, self.work_mem_megs)
+            self.qsub_args = get_coe_qsub_args("cpu.q", self.threads, self.work_mem_megs)
 
     def run_pipeline(self, root_stage):
         self.check_stages(root_stage)
