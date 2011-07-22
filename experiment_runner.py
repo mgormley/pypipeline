@@ -197,7 +197,7 @@ class JavaExpParams(ExpParams):
         '''Returns reasonable JVM args based on the total megabytes available'''
         work_mem_megs = total_work_mem_megs
         # Subtract off some overhead for the JVM
-        work_mem_megs -= 256
+        work_mem_megs -= 320
         # Subtract off some overhead for the PermSize
         max_perm_size = 128
         work_mem_megs -= max_perm_size
