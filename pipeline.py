@@ -55,6 +55,10 @@ class Stage:
         self.name = str(name) #TODO: is this the best way to handle name's type?
         # Create a more unique name for qsub so that multiple the kill script only kills its own job
         self.qsub_name = "%s_%x" % (self.name, random.randint(0, sys.maxint))
+        # If qsub name does not begin with a letter, add an "a"
+        matcher = re.compile('^[a-z,A-Z]').search(self.qsub_name)
+        if not matcher:
+            self.qsub_name = 'a'+self.qsub_name
         self.completion_indicator = completion_indicator
         self.prereqs = []
         self.dependents = []
@@ -287,11 +291,6 @@ class PipelineRunner:
         all_stages = self.get_stages_as_list(root_stage)
         names = set()
         for stage in all_stages:
-            matcher = re.compile('^[a-z,A-Z]').search(stage.name)
-            if not matcher:
-                print "Warning: stage name must begin with a letter: " + stage.name,
-                stage.name = 'a'+stage.name
-                print ". Changing to: " + stage.name + "."
             assert stage.name not in names, "Multiple stages have the same name: " + stage.name + "\n" + str([s.name for s in all_stages])
             names.add(stage.name)
         print "all_stages(names):",[stage.name for stage in all_stages]                    
