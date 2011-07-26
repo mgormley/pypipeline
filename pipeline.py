@@ -54,7 +54,7 @@ class Stage:
         ''' If the default completion_indicator is used, it will be created in the cwd for this stage '''
         self.name = str(name) #TODO: is this the best way to handle name's type?
         # Create a more unique name for qsub so that multiple the kill script only kills its own job
-        self.qsub_name = "%s_%x" % (self.name, random.randint())
+        self.qsub_name = "%s_%x" % (self.name, random.randint(0, sys.maxint))
         self.completion_indicator = completion_indicator
         self.prereqs = []
         self.dependents = []
