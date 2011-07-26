@@ -58,7 +58,7 @@ class Stage:
         self.completion_indicator = completion_indicator
         self.prereqs = []
         self.dependents = []
-        self.serial = None        
+        self.serial = False        
         self.qsub_args = None
         
     def add_prereq(self, stage):
@@ -116,11 +116,11 @@ class Stage:
             prereq_names = [prereq.qsub_name for prereq in self.prereqs]
             qsub_script = create_queue_command(script_file, cwd, self.qsub_name, prereq_names, stdout, self.qsub_args)
             qsub_script_file = write_script("qsub-script", qsub_script, cwd)
-            qdel_script = "qdel %s" % (self.qsub_name)
-            self.qdel_script_file = write_script("qdel-script", qdel_script, cwd)
             print qsub_script
             subprocess.check_call(shlex.split("bash %s" % (qsub_script_file)))
-
+            qdel_script = "qdel %s" % (self.qsub_name)
+            self.qdel_script_file = write_script("qdel-script", qdel_script, cwd)
+            
     def create_stage_script(self, exp_dir):
         ''' Override this method '''
         return None
