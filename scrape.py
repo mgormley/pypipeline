@@ -10,19 +10,20 @@ import stat
 import subprocess
 from optparse import OptionParser
 from glob import glob
-from experiments.core.util import get_all_following, get_following, get_time,\
+from .util import get_all_following, get_following, get_time,\
     to_str, get_following_literal
-from experiments.core.google_spreadsheets import get_spreadsheet_by_title,\
+from .google_spreadsheets import get_spreadsheet_by_title,\
     get_first_worksheet, clear_worksheet, write_row
 import getpass
 import gdata.spreadsheet.service
 
 class Scraper:
     
-    def __init__(self, print_csv=True, write_google=False):
+    def __init__(self, print_csv=True, write_google=False, remain_only=False):
         self.sep = ","
         self.print_csv = print_csv
         self.write_google = write_google
+        self.remain_only = remain_only
         if self.write_google:
             # Get Password
             email = 'matthew.gormley@gmail.com'
@@ -70,17 +71,28 @@ class Scraper:
                 name = os.path.basename(exp_dir)
                 sys.stderr.write("Reading %s\n" % (name))
                 
-                # Read experiment parameters
                 exp = self.get_exp_params_instance()
                 exp_list.append(exp)
-                exp.read(os.path.join(exp_dir, "expparams.txt"))
                 
-                # Read stdout
                 stdout_file = os.path.join(exp_dir,"stdout")
+                done_file = os.path.join(exp_dir,"DONE")
 
-                self.scrape_errors(exp, exp_dir, stdout_file)
-
-                self.scrape_exp(exp, exp_dir, stdout_file)
+                if self.remain_only:
+                    # Really we should only print those that are not completed.
+                    # But this is commented out so that we can read off elapsed times as well.
+                    #if os.path.exists(done_file):
+                    #    exp_list.pop()
+                    #    continue
+                    exp.update(exp_dir=exp_dir)
+                    _, _, elapsed = get_time(stdout_file)
+                    exp.update(elapsed = elapsed)
+                    exp.update(timeRemaining = get_following(stdout_file, "Time remaining: ", -1))
+                else:
+                    # Read experiment parameters
+                    exp.read(os.path.join(exp_dir, "expparams.txt"))
+                    # Read stdout
+                    self.scrape_errors(exp, exp_dir, stdout_file)
+                    self.scrape_exp(exp, exp_dir, stdout_file)
                 
             except Exception, e:
                 # TODO: should we post this to Google Spreadsheet?
