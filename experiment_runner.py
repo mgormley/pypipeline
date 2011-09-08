@@ -254,13 +254,28 @@ class ExpParamsRunner(PipelineRunner):
     def run_experiments(self, experiments):
         shorten_names(experiments)
         root_stage = RootStage()
-        for experiment in experiments:
-            exp_stage = ExpParamsStage(experiment,self)
+        prereqs = self.get_prereqs()
+        if prereqs and (not prereqs == []):
+            # We call _get_exp_stages for prereqs first so that the dfs in our
+            # overrided get_stages_as_list still works correctly
+            prereqs = self._get_exp_stages(prereqs, root_stage)
+        exp_stages = self._get_exp_stages(experiments, root_stage)
+        if prereqs:
+            for exp_stage in exp_stages:
+                for prereq in prereqs:
+                    exp_stage.add_prereq(prereq)
+        self.run_pipeline(root_stage)
+        
+    def _get_exp_stages(self, expparams, root_stage):
+        exp_stages = []
+        for expparam in expparams:
+            exp_stage = ExpParamsStage(expparam,self)
             # Give each experiment stage the global qsub_args 
             exp_stage.qsub_args = self.qsub_args
             exp_stage.add_prereq(root_stage)
-        self.run_pipeline(root_stage)
-
+            exp_stages.append(exp_stage)
+        return exp_stages
+    
     def create_post_processing_stage_script(self, top_dir, all_stages):
         all_stages = all_stages[1:]
         exp_tuples = [(stage.name, stage.experiment) for stage in all_stages]
@@ -268,9 +283,13 @@ class ExpParamsRunner(PipelineRunner):
     
     def get_stages_as_list(self, root_stage):
         '''This method is overriden to give the provided order for experiments'''
-        return self.dfs_stages(root_stage)
+        return self.bfs_stages(root_stage)
     
     def create_post_processing_script(self, top_dir, exp_tuples):
+        ''' Override this method '''
+        return None
+
+    def get_prereqs(self):
         ''' Override this method '''
         return None
 
@@ -313,7 +332,7 @@ class ExperimentRunner(PipelineRunner):
     
     def get_stages_as_list(self, root_stage):
         '''This method is overriden to give the provided order for experiments'''
-        return self.dfs_stages(root_stage)
+        return self.bfs_stages(root_stage)
         
     def create_experiment_script(self, name, experiment, exp_dir):
         ''' Override this method '''

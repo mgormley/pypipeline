@@ -321,6 +321,16 @@ class PipelineRunner:
                 if not s in stages:
                     stages.append(s)
         return stages
+    
+    def bfs_stages(self, stage):
+        stages = []
+        queue = [stage]
+        while queue != []:
+            stage = queue.pop(0)
+            if not stage in stages:
+                stages.append(stage)
+            queue.extend(stage.dependents)
+        return stages
 
     # TODO: consider removing this - it is only for convenience
     def add_post_processing_stage(self, root_stage, top_dir):
