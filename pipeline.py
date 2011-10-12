@@ -65,6 +65,10 @@ class Stage:
         self.serial = False        
         self.qsub_args = None
         
+    def add_dependent(self, stage):
+        stage.prereqs.append(self)
+        self.dependents.append(stage)
+        
     def add_prereq(self, stage):
         self.prereqs.append(stage)
         stage.dependents.append(self)
@@ -285,14 +289,18 @@ class PipelineRunner:
             stage.serial = self.serial
             stage.cwd = cwd
             stage.work_mem_megs = self.work_mem_megs
+            if stage.qsub_args == None:
+                # Give each stage the global qsub_args if it has none
+                stage.qsub_args = self.qsub_args
             stage.run_stage(cwd)
-        # Create a global qdel script
-        global_qdel = ""
-        for stage in self.get_stages_as_list(root_stage):
-            if stage.name == "root_stage":
-                continue
-            global_qdel += "bash %s\n" % (stage.qdel_script_file)
-        write_script("global-qdel-script", global_qdel, top_dir)
+        if not self.serial:
+            # Create a global qdel script
+            global_qdel = ""
+            for stage in self.get_stages_as_list(root_stage):
+                if stage.name == "root_stage":
+                    continue
+                global_qdel += "bash %s\n" % (stage.qdel_script_file)
+            write_script("global-qdel-script", global_qdel, top_dir)
             
     def check_stages(self, root_stage):
         all_stages = self.get_stages_as_list(root_stage)

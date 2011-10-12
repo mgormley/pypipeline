@@ -211,16 +211,19 @@ class JavaExpParams(ExpParams):
     
 class ExpParamsStage(Stage):
     
-    def __init__(self, experiment, eprunner):
-        Stage.__init__(self, experiment.get_name())
-        self.experiment = experiment
+    def __init__(self, expparams, eprunner):
+        Stage.__init__(self, expparams.get_name())
+        self.expparams = expparams
         self.eprunner = eprunner
 
     def create_stage_script(self, exp_dir):
-        # Write out the experiment parameters to a file
-        self.experiment.write(os.path.join(exp_dir, "expparams.txt"))
         # Create and return the experiment script string
-        return self.experiment.create_experiment_script(exp_dir, self.eprunner)
+        script = self.expparams.create_experiment_script(exp_dir, self.eprunner)
+        # Write out the experiment parameters to a file
+        # Do this after create_experiment_script in case there are additions to the parameters
+        # made by that call.
+        self.expparams.write(os.path.join(exp_dir, "expparams.txt"))
+        return script
 
     def __str__(self):
         return self.name
@@ -266,19 +269,27 @@ class ExpParamsRunner(PipelineRunner):
                     exp_stage.add_prereq(prereq)
         self.run_pipeline(root_stage)
         
+    def run_pipeline(self, root_stage):
+        # Shorten the names
+        # TODO: this is hacky and it seems we're doing it twice (here and above)
+        experiments = [stage.expparams for stage in self.get_stages_as_list(root_stage) if not isinstance(stage, RootStage)]
+        shorten_names(experiments)
+        for stage in self.get_stages_as_list(root_stage):
+            if not isinstance(stage, RootStage):
+                stage.name = stage.expparams.get_name()
+        PipelineRunner.run_pipeline(self, root_stage)
+        
     def _get_exp_stages(self, expparams, root_stage):
         exp_stages = []
         for expparam in expparams:
             exp_stage = ExpParamsStage(expparam,self)
-            # Give each experiment stage the global qsub_args 
-            exp_stage.qsub_args = self.qsub_args
             exp_stage.add_prereq(root_stage)
             exp_stages.append(exp_stage)
         return exp_stages
     
     def create_post_processing_stage_script(self, top_dir, all_stages):
         all_stages = all_stages[1:]
-        exp_tuples = [(stage.name, stage.experiment) for stage in all_stages]
+        exp_tuples = [(stage.name, stage.expparams) for stage in all_stages]
         return self.create_post_processing_script(top_dir, exp_tuples)
     
     def get_stages_as_list(self, root_stage):
@@ -320,8 +331,6 @@ class ExperimentRunner(PipelineRunner):
         root_stage = RootStage()
         for name,experiment in experiments.items():
             exp_stage = ExperimentStage(name, experiment, self)
-            # Give each experiment stage the global qsub_args 
-            exp_stage.qsub_args = self.qsub_args
             exp_stage.add_prereq(root_stage)
         self.run_pipeline(root_stage)
 
