@@ -10,8 +10,7 @@ def to_str(x):
     else:
         return str(x)
 
-def get_time(stdout_file):
-    lines = open(stdout_file, 'r').readlines()
+def get_time(lines):
     user, system, elapsed = None, None, None
     for line in lines:
         match = re.search("(.*)user (.*)system (.*)elapsed", line)
@@ -22,13 +21,11 @@ def get_time(stdout_file):
             break
     return user, system, elapsed
 
-def get_following_literal(stdout_file, prefix, index=0, include_prefix=False):
-    return get_following(stdout_file, re.escape(prefix), index)
+def get_following_literal(lines, prefix, index=0, include_prefix=False):
+    return get_following(lines, re.escape(prefix), index)
 
-def get_following(stdout_file, prefix, index=0, include_prefix=False):
-    if not os.path.exists(stdout_file):
-        return None
-    values = get_all_following(stdout_file, prefix, include_prefix)
+def get_following(lines, prefix, index=0, include_prefix=False):
+    values = get_all_following(lines, prefix, include_prefix)
     if index < len(values) and index > -len(values):
         return values[index]
     # TODO: special case...will this screw things up?
@@ -36,11 +33,8 @@ def get_following(stdout_file, prefix, index=0, include_prefix=False):
         return values[0]
     return None
 
-def get_all_following(stdout_file, prefix, include_prefix=False):
-    if not os.path.exists(stdout_file):
-        return None
+def get_all_following(lines, prefix, include_prefix=False):
     values = []
-    lines = open(stdout_file, 'r').readlines()
     
     if include_prefix:
         regex = re.compile("("+prefix+".*)")
