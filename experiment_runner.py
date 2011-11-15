@@ -33,6 +33,7 @@ class ExpParams:
         self.kvsep = "\t"
         self.paramsep = "\n"
         self.none_string = ""
+        self.key_order = None
         
     def __add__(self, other):
         ''' Overloading operator + '''
@@ -158,6 +159,8 @@ class ExpParams:
         return map(lambda x:map(self._get_as_str, x), sps)
     
     def get_name_key_order(self):
+        if self.key_order:
+            return self.key_order
         key_order = []
         initial_keys = self.get_initial_keys()
         all_keys = sorted(self.params.keys())
@@ -228,11 +231,11 @@ class ExpParamsStage(Stage):
     def __str__(self):
         return self.name
 
-def shorten_names(experiments):
-    ''' Shortens the names of a set of experiments '''
+def shorten_names(expparams):
+    ''' Shortens the names of a set of expparams '''
     key2vals = defaultdict(set)
-    for experiment in experiments:
-        for key,value in experiment.params.items():
+    for expparam in expparams:
+        for key,value in expparam.params.items():
             key2vals[key].add(value)
     
     nonunique_keys = set()
@@ -242,12 +245,11 @@ def shorten_names(experiments):
     
     kept_keys = set()
     kept_keys.update(nonunique_keys)
-    for experiment in experiments:
-        kept_keys.update(set(experiment.get_initial_keys()))
-    
-    for experiment in experiments:
-        order = filter(lambda x: x in kept_keys, experiment.get_name_key_order())
-        experiment.get_name_key_order = lambda : order
+    for expparam in expparams:
+        kept_keys.update(set(expparam.get_initial_keys()))
+
+    for expparam in expparams:
+        expparam.key_order = filter(lambda x: x in kept_keys, expparam.get_name_key_order())
 
 class ExpParamsRunner(PipelineRunner):
     
@@ -255,7 +257,6 @@ class ExpParamsRunner(PipelineRunner):
         PipelineRunner.__init__(self, name, queue)
 
     def run_experiments(self, experiments):
-        shorten_names(experiments)
         root_stage = RootStage()
         prereqs = self.get_prereqs()
         if prereqs and (not prereqs == []):
@@ -270,15 +271,24 @@ class ExpParamsRunner(PipelineRunner):
         self.run_pipeline(root_stage)
         
     def run_pipeline(self, root_stage):
-        # Shorten the names
-        # TODO: this is hacky and it seems we're doing it twice (here and above)
-        experiments = [stage.expparams for stage in self.get_stages_as_list(root_stage) if not isinstance(stage, RootStage)]
-        shorten_names(experiments)
+        self.shorten_names_epstages(root_stage)
+        
         for stage in self.get_stages_as_list(root_stage):
             if not isinstance(stage, RootStage):
                 stage.name = stage.expparams.get_name()
         PipelineRunner.run_pipeline(self, root_stage)
         
+    def shorten_names_epstages(self, root_stage):
+        # TODO: note that this is awkwardly a class-method only
+        #   because get_stages_as_list is a class-method
+        # Shorten the names
+        experiments = [stage.expparams for stage in self.get_stages_as_list(root_stage) if not isinstance(stage, RootStage)]
+        shorten_names(experiments)
+        # Update the names on the stages
+        for stage in self.get_stages_as_list(root_stage):
+            if not isinstance(stage, RootStage):
+                stage.name = stage.expparams.get_name()
+    
     def _get_exp_stages(self, expparams, root_stage):
         exp_stages = []
         for expparam in expparams:
