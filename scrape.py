@@ -22,6 +22,9 @@ class ResultsWriter:
     def __init__(self):
         pass
     
+    def write_top(self, top_dir):
+        pass
+    
     def write_readme(self, lines):
         pass
     
@@ -41,6 +44,9 @@ class CsvResultsWriter(ResultsWriter):
     def __init__(self):
         self.sep = ","
         self.quote = '"'
+        
+    def write_top(self, top_dir):
+        print top_dir
     
     def csv_to_str(self, x):
         if x.find(self.sep) != -1:
@@ -80,6 +86,9 @@ class RprojResultsWriter(CsvResultsWriter):
         if x == "":
             x = "NA"
         return x
+    
+    def write_top(self, top_dir):
+        sys.stderr.write(top_dir + "\n")
         
     def write_readme(self, lines):
         lines = " ".join(lines)
@@ -144,7 +153,8 @@ class Scraper:
     def scrape(self, top_dir):
         exp_dirs = [os.path.join(top_dir,f) for f in os.listdir(top_dir) 
                     if os.path.isdir(os.path.join(top_dir, f)) and f != ".svn"]
-        print top_dir
+        for writer in self.writers:
+            writer.write_top(top_dir)
         # Read README
         readme = os.path.join(top_dir, "README")
         if os.path.exists(readme):
