@@ -52,6 +52,14 @@ def get_unique_name(name):
 class Stage:
     def __init__(self, name, completion_indicator="DONE"):
         ''' If the default completion_indicator is used, it will be created in the cwd for this stage '''
+        self.set_name(name)
+        self.completion_indicator = completion_indicator
+        self.prereqs = []
+        self.dependents = []
+        self.serial = False        
+        self.qsub_args = None
+        
+    def set_name(self, name):
         self.name = str(name) #TODO: is this the best way to handle name's type?
         # Create a more unique name for qsub so that multiple the kill script only kills its own job
         self.qsub_name = "%s_%x" % (self.name, random.randint(0, sys.maxint))
@@ -59,12 +67,7 @@ class Stage:
         matcher = re.compile('^[a-z,A-Z]').search(self.qsub_name)
         if not matcher:
             self.qsub_name = 'a'+self.qsub_name
-        self.completion_indicator = completion_indicator
-        self.prereqs = []
-        self.dependents = []
-        self.serial = False        
-        self.qsub_args = None
-        
+            
     def add_dependent(self, stage):
         stage.prereqs.append(self)
         self.dependents.append(stage)

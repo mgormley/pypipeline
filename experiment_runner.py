@@ -272,10 +272,6 @@ class ExpParamsRunner(PipelineRunner):
         
     def run_pipeline(self, root_stage):
         self.shorten_names_epstages(root_stage)
-        
-        for stage in self.get_stages_as_list(root_stage):
-            if not isinstance(stage, RootStage):
-                stage.name = stage.expparams.get_name()
         PipelineRunner.run_pipeline(self, root_stage)
         
     def shorten_names_epstages(self, root_stage):
@@ -287,7 +283,7 @@ class ExpParamsRunner(PipelineRunner):
         # Update the names on the stages
         for stage in self.get_stages_as_list(root_stage):
             if not isinstance(stage, RootStage):
-                stage.name = stage.expparams.get_name()
+                stage.set_name(stage.expparams.get_name())
     
     def _get_exp_stages(self, expparams, root_stage):
         exp_stages = []
