@@ -150,6 +150,10 @@ class Scraper:
         if write_google: self.writers.append(GoogleResultsWriter())
         if print_csv or len(self.writers) == 0: self.writers.append(CsvResultsWriter())
 
+    def read_stdout_lines(self, stdout_file):
+        stdout_lines = open(stdout_file, 'r').readlines()
+        return stdout_lines
+
     def scrape(self, top_dir):
         exp_dirs = [os.path.join(top_dir,f) for f in os.listdir(top_dir) 
                     if os.path.isdir(os.path.join(top_dir, f)) and f != ".svn"]
@@ -182,10 +186,11 @@ class Scraper:
                     #if os.path.exists(done_file):
                     #    exp_list.pop()
                     #    continue
+                    stdout_lines = self.read_stdout_lines(stdout_file)
                     exp.update(exp_dir=exp_dir)
-                    _, _, elapsed = get_time(stdout_file)
+                    _, _, elapsed = get_time(stdout_lines)
                     exp.update(elapsed = elapsed)
-                    exp.update(timeRemaining = get_following_literal(stdout_file, "Time remaining: ", -1))
+                    exp.update(timeRemaining = get_following_literal(stdout_lines, "Time remaining: ", -1))
                 else:
                     # Read experiment parameters
                     exp.read(os.path.join(exp_dir, "expparams.txt"))
