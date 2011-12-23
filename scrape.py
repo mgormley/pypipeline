@@ -185,7 +185,7 @@ class Scraper:
                     exp.update(exp_dir=exp_dir)
                     _, _, elapsed = get_time(stdout_file)
                     exp.update(elapsed = elapsed)
-                    exp.update(timeRemaining = get_following(stdout_file, "Time remaining: ", -1))
+                    exp.update(timeRemaining = get_following_literal(stdout_file, "Time remaining: ", -1))
                 else:
                     # Read experiment parameters
                     exp.read(os.path.join(exp_dir, "expparams.txt"))
