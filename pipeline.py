@@ -250,6 +250,9 @@ class PipelineRunner:
         def get_coe_qsub_args(queue, threads, work_mem_megs):
             return " -q %s -l num_proc=%d -l h_vmem=%dM -l virtual_free=%dM " % (queue, threads, work_mem_megs, work_mem_megs)
         
+        def get_wisp_qsub_args(queue, threads, work_mem_megs, time="48:00:00"):
+            return " -q %s -l num_proc=%d -l h_vmem=%dM -l virtual_free=%dM -l h_rt=%s" % (queue, threads, work_mem_megs, work_mem_megs, time)
+        
         def get_clsp_qsub_args(threads, work_mem_megs):
             return " -q all.q -pe smp %d -l cpu_arch=x86_64 -l mem_free=%dM " % (threads, work_mem_megs)
         
@@ -274,6 +277,14 @@ class PipelineRunner:
             self.threads = 2
             self.work_mem_megs = 4096
             self.qsub_args = get_coe_qsub_args("cpu.q", self.threads, self.work_mem_megs)
+        elif self.queue == "cpuwisp":            
+            self.threads = 1
+            self.work_mem_megs = 2048
+            self.qsub_args = get_wisp_qsub_args("cpu.q", self.threads, self.work_mem_megs)
+        elif self.queue == "memwisp":  
+            self.threads = 4
+            self.work_mem_megs = 8192
+            self.qsub_args = get_wisp_qsub_args("cpu.q", self.threads, self.work_mem_megs)
         else: # self.queue == "cpu"
             self.threads = 1
             self.work_mem_megs = 2048
