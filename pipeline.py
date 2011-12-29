@@ -250,8 +250,9 @@ class PipelineRunner:
         def get_coe_qsub_args(queue, threads, work_mem_megs):
             return " -q %s -l num_proc=%d -l h_vmem=%dM -l virtual_free=%dM " % (queue, threads, work_mem_megs, work_mem_megs)
         
-        def get_wisp_qsub_args(queue, threads, work_mem_megs, time=str(60*60*24*7)):
-            return " -q %s -l num_proc=%d -l h_vmem=%dM -l virtual_free=%dM -l h_rt=%s" % (queue, threads, work_mem_megs, work_mem_megs, time)
+        def get_wisp_qsub_args(queue, threads, work_mem_megs, time="1000:00:00"):
+            work_mem_megs += 1000
+            return " -q %s -l num_proc=%d,h_vmem=%dM,mem_free=%dM,h_rt=%s " % (queue, threads, work_mem_megs, work_mem_megs, time)
         
         def get_clsp_qsub_args(threads, work_mem_megs):
             return " -q all.q -pe smp %d -l cpu_arch=x86_64 -l mem_free=%dM " % (threads, work_mem_megs)
