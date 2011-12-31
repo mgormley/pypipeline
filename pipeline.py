@@ -90,7 +90,7 @@ class Stage:
     def _run_stage(self, exp_dir):
         ''' Overidden by GridShardRunnerStage '''
         script = ""
-        if self.queue.find("wisp") == -1:
+        if os.uname()[1].find("wisp") == -1:
             # TODO: ulimit doesn't seem to work on Mac OS X for some reason, or on wisp
             script += "ulimit -v %d\n" % (1024 * self.work_mem_megs)
             script += "\n"
