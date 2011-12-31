@@ -90,6 +90,7 @@ class Stage:
     def _run_stage(self, exp_dir):
         ''' Overidden by GridShardRunnerStage '''
         script = ""
+        #TODO: stop using uname, this could be confusing down the road
         if os.uname()[1].find("wisp") == -1:
             # TODO: ulimit doesn't seem to work on Mac OS X for some reason, or on wisp
             script += "ulimit -v %d\n" % (1024 * self.work_mem_megs)
@@ -253,6 +254,7 @@ class PipelineRunner:
             return " -q %s -l num_proc=%d -l h_vmem=%dM -l virtual_free=%dM " % (queue, threads, work_mem_megs, work_mem_megs)
         
         def get_wisp_qsub_args(queue, threads, work_mem_megs, time="1000:00:00"):
+            work_mem_megs *= 1.5
             return " -q %s -l num_proc=%d,h_vmem=%dM,mem_free=%dM,h_rt=%s " % (queue, threads, work_mem_megs, work_mem_megs, time)
         
         def get_clsp_qsub_args(threads, work_mem_megs):
