@@ -289,6 +289,10 @@ class PipelineRunner:
             self.threads = 1
             self.work_mem_megs = 8192
             self.qsub_args = get_wisp_qsub_args("all.q", self.threads, self.work_mem_megs)
+        elif self.queue == "himemwisp":  
+            self.threads = 1
+            self.work_mem_megs = 16384
+            self.qsub_args = get_wisp_qsub_args("all.q", self.threads, self.work_mem_megs)
         else: # self.queue == "cpu"
             self.threads = 1
             self.work_mem_megs = 2048
