@@ -112,5 +112,5 @@ def sweep_mult_low(low_val, factor, num_vals):
     return [x for x in sweep_mult(low_val, factor, num_vals*2) if x >= low_val]
 
 if __name__ == "__main__":
-    for x in sweep_mult_low(10, 2, 8):
+    for x in sweep_mult(1, 2, 12):
         print x
