@@ -18,6 +18,7 @@ import topological
 from util import get_new_directory
 from util import get_new_file
 import random
+from experiments.core.qsub import get_qsub_args
 
 def write_script(prefix, script, dir):
     out, script_file = get_new_file(prefix=prefix,suffix=".sh",dir=dir)
@@ -249,55 +250,14 @@ class PipelineRunner:
     def __init__(self,name="experiments",queue=None):
         self.name = name
         self.serial = (queue == None)
-                
-        def get_coe_qsub_args(queue, threads, work_mem_megs):
-            return " -q %s -l num_proc=%d -l h_vmem=%dM -l virtual_free=%dM " % (queue, threads, work_mem_megs, work_mem_megs)
-        
-        def get_wisp_qsub_args(queue, threads, work_mem_megs, time="1000:00:00"):
-            work_mem_megs *= 1.5
-            return " -q %s -l num_proc=%d,h_vmem=%dM,mem_free=%dM,h_rt=%s " % (queue, threads, work_mem_megs, work_mem_megs, time)
-        
-        def get_clsp_qsub_args(threads, work_mem_megs):
-            return " -q all.q -pe smp %d -l cpu_arch=x86_64 -l mem_free=%dM " % (threads, work_mem_megs)
-        
-        self.queue = queue
-        if self.queue == "himem":
-            self.threads = 6
-            self.work_mem_megs = 32768
-            self.qsub_args = get_coe_qsub_args("himem.q", self.threads, self.work_mem_megs)
-        elif self.queue == "mem":
-            self.threads = 4
-            self.work_mem_megs = 8192
-            self.qsub_args = get_coe_qsub_args("mem.q", self.threads, self.work_mem_megs)
-        elif self.queue == "clsp-mem":
-            self.threads = 4
-            self.work_mem_megs = 8192
-            self.qsub_args = get_clsp_qsub_args(self.threads, self.work_mem_megs)
-        elif self.queue == "clsp-cpu":
-            self.threads = 1
-            self.work_mem_megs = 2048
-            self.qsub_args = get_clsp_qsub_args(self.threads, self.work_mem_megs)
-        elif self.queue == "cpu2x":            
-            self.threads = 2
-            self.work_mem_megs = 4096
-            self.qsub_args = get_coe_qsub_args("cpu.q", self.threads, self.work_mem_megs)
-        elif self.queue == "cpuwisp":            
-            self.threads = 1
-            self.work_mem_megs = 2048
-            self.qsub_args = get_wisp_qsub_args("all.q", self.threads, self.work_mem_megs)
-        elif self.queue == "memwisp":  
-            self.threads = 1
-            self.work_mem_megs = 8192
-            self.qsub_args = get_wisp_qsub_args("all.q", self.threads, self.work_mem_megs)
-        elif self.queue == "himemwisp":  
-            self.threads = 1
-            self.work_mem_megs = 16384
-            self.qsub_args = get_wisp_qsub_args("all.q", self.threads, self.work_mem_megs)
-        else: # self.queue == "cpu"
-            self.threads = 1
-            self.work_mem_megs = 2048
-            self.qsub_args = get_coe_qsub_args("cpu.q", self.threads, self.work_mem_megs)
 
+        # Setup arguments for qsub
+        self.queue = queue
+        (qsub_args, threads, work_mem_megs) = get_qsub_args(queue)
+        self.qsub_args = qsub_args
+        self.threads = threads
+        self.work_mem_megs = work_mem_megs
+        
     def run_pipeline(self, root_stage):
         self.check_stages(root_stage)
         top_dir = get_new_directory(prefix=self.name, dir="exp")
