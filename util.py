@@ -10,6 +10,12 @@ def to_str(x):
     else:
         return str(x)
 
+def to_int(x):
+    if x == None:
+        return None
+    else:
+        return int(x)
+
 def get_time(lines):
     user, system, elapsed = None, None, None
     for line in lines:
