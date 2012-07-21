@@ -18,7 +18,7 @@ import topological
 from util import get_new_directory
 from util import get_new_file
 import random
-from experiments.core.qsub import get_qsub_args
+from qsub import get_qsub_args
 
 def write_script(prefix, script, dir):
     out, script_file = get_new_file(prefix=prefix,suffix=".sh",dir=dir)
