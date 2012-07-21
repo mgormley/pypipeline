@@ -9,14 +9,14 @@ import shlex
 import subprocess
 from subprocess import Popen
 from optparse import OptionParser
-from experiments.core.util import get_new_file, sweep_mult, fancify_cmd,\
+from util import get_new_file, sweep_mult, fancify_cmd,\
     sweep_mult_low
 import platform
 from glob import glob
-from experiments.core.experiment_runner import ExpParamsRunner, ExpParamsStage
-from experiments.core import experiment_runner
+from experiment_runner import ExpParamsRunner, ExpParamsStage
+import experiment_runner
 import shutil
-from experiments.core.pipeline import write_script, RootStage, Stage
+from pipeline import write_script, RootStage, Stage
 
 def run_and_get_output(command):
     p = Popen(args=shlex.split(command), stderr=subprocess.PIPE, stdout=subprocess.PIPE)
@@ -78,6 +78,8 @@ class Relauncher:
                 cmd = "bash %s" % (qsub_file)
                 print cmd
                 subprocess.check_call(shlex.split(cmd))
+            else:
+                print "Relaunching directory: ",exp_dir
 
         print "Total: ",self.relaunch_count+self.done_count+self.running_count
         print "Total done: ",self.done_count
