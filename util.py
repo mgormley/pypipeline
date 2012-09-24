@@ -2,11 +2,11 @@ import os
 import math
 import re
 
-# ------------------- tail -n 20 implementation ------------------------
-# Copied from: 
-# http://stackoverflow.com/questions/136168/get-last-n-lines-of-a-file-with-python-similar-to-tail
+# ------------------- File reading ------------------------
 
 def tail(filename, window=20):
+    # Copied from: 
+    # http://stackoverflow.com/questions/136168/get-last-n-lines-of-a-file-with-python-similar-to-tail
     f = open(filename, 'r')
     BUFSIZ = 1024
     f.seek(0, 2)
@@ -29,7 +29,16 @@ def tail(filename, window=20):
         size -= linesFound
         bytes -= BUFSIZ
         block -= 1
-    return '\n'.join(''.join(data).splitlines()[-window:])
+    return ''.join(data).splitlines()[-window:]
+
+def head(filename, window=20):
+    lines = []
+    f = open(filename, 'r')
+    for i,line in enumerate(f):
+        if i >= window:
+            break 
+        lines.append(line)
+    return lines
 
 # ------------------- Scraping utilities ------------------------
 
