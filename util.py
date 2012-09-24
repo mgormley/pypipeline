@@ -2,6 +2,35 @@ import os
 import math
 import re
 
+# ------------------- tail -n 20 implementation ------------------------
+# Copied from: 
+# http://stackoverflow.com/questions/136168/get-last-n-lines-of-a-file-with-python-similar-to-tail
+
+def tail(filename, window=20):
+    f = open(filename, 'r')
+    BUFSIZ = 1024
+    f.seek(0, 2)
+    bytes = f.tell()
+    size = window
+    block = -1
+    data = []
+    while size > 0 and bytes > 0:
+        if (bytes - BUFSIZ > 0):
+            # Seek back one whole BUFSIZ
+            f.seek(block*BUFSIZ, 2)
+            # read BUFFER
+            data.append(f.read(BUFSIZ))
+        else:
+            # file too small, start from begining
+            f.seek(0,0)
+            # only read what was not read
+            data.append(f.read(bytes))
+        linesFound = data[-1].count('\n')
+        size -= linesFound
+        bytes -= BUFSIZ
+        block -= 1
+    return '\n'.join(''.join(data).splitlines()[-window:])
+
 # ------------------- Scraping utilities ------------------------
 
 def frange(bottom, top, delta):
@@ -41,26 +70,35 @@ def get_following_literal(lines, prefix, index=0, include_prefix=False):
 
 def get_following(lines, prefix, index=0, include_prefix=False):
     values = get_all_following(lines, prefix, include_prefix)
+    return get_by_index(values, index)
+
+def get_all_following(lines, prefix, include_prefix=False):
+    if include_prefix:
+        regex = re.compile("("+prefix+".*)")
+    else:
+        regex = re.compile(prefix+"(.*)")
+
+    return get_all_group1(lines, regex)
+
+def get_group1(lines, regex, index=0):
+    values = get_all_group1(lines, regex)
+    return get_by_index(values, index)
+
+def get_all_group1(lines, regex):
+    values = []
+    for line in lines:
+        match = regex.search(line)
+        if match != None:
+            values.append(match.group(1))
+    return values
+
+def get_by_index(values, index):
     if index < len(values) and index > -len(values):
         return values[index]
     # TODO: special case...will this screw things up?
     if index == -1 and len(values) == 1:
         return values[0]
     return None
-
-def get_all_following(lines, prefix, include_prefix=False):
-    values = []
-    
-    if include_prefix:
-        regex = re.compile("("+prefix+".*)")
-    else:
-        regex = re.compile(prefix+"(.*)")
-    
-    for line in lines:
-        match = regex.search(line)
-        if match != None:
-            values.append(match.group(1))
-    return values
 
 # ------------------- General utilities ------------------------
 
