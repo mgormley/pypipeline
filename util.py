@@ -83,9 +83,9 @@ def get_following(lines, prefix, index=0, include_prefix=False):
 
 def get_all_following(lines, prefix, include_prefix=False):
     if include_prefix:
-        regex = re.compile("("+prefix+".*)")
+        regex = "("+prefix+".*)"
     else:
-        regex = re.compile(prefix+"(.*)")
+        regex = prefix+"(.*)"
 
     return get_all_group1(lines, regex)
 
@@ -93,7 +93,8 @@ def get_group1(lines, regex, index=0):
     values = get_all_group1(lines, regex)
     return get_by_index(values, index)
 
-def get_all_group1(lines, regex):
+def get_all_group1(lines, regex_str):
+    regex = re.compile(regex_str)
     values = []
     for line in lines:
         match = regex.search(line)
