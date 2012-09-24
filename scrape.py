@@ -192,9 +192,9 @@ class Scraper:
                     exp.update(elapsed = elapsed)
                     exp.update(timeRemaining = get_following_literal(stdout_lines, "Time remaining: ", -1))
                 else:
-                    exp.update(exp_dir=exp_dir)
                     # Read experiment parameters
                     exp.read(os.path.join(exp_dir, "expparams.txt"))
+                    exp.update(exp_dir=exp_dir)
                     # Read stdout
                     self.scrape_errors(exp, exp_dir, stdout_file)
                     self.scrape_exp(exp, exp_dir, stdout_file)
@@ -205,7 +205,7 @@ class Scraper:
                 import traceback
                 sys.stderr.write(str(e) + '\n')
                 traceback.print_exc()
-        
+
         # Drop the "old:" prefix for convenience on eval experiments:
         for exp in exp_list:
             #eval wasn't printing expname: if exp.get("expname") == "eval":

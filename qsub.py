@@ -4,7 +4,7 @@ Created on Jan 13, 2012
 @author: mgormley
 '''
 
-def get_wisp_qsub_args(queue, threads, work_mem_megs, time="8:00:00"):
+def get_wisp_qsub_args(queue, threads, work_mem_megs, time="08:00:00"):
     # We used to include: "h_vmem=%dM," % (work_mem_megs)
     return " -q %s -l num_proc=%d,mem_free=%dM,h_rt=%s " % (queue, threads, work_mem_megs, time)
 
