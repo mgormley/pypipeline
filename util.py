@@ -8,7 +8,7 @@ def frange(bottom, top, delta):
     #return [x*delta + initial for x in range(1,(final-initial]
     r = []
     x = bottom
-    while x <= top:
+    while x <= top + 1e-13:
         r.append(x)
         x += delta
     return r
