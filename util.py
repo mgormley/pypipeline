@@ -85,6 +85,9 @@ def get_following(lines, prefix, index=0, include_prefix=False):
     values = get_all_following(lines, prefix, include_prefix)
     return get_by_index(values, index)
 
+def get_all_following_literal(lines, prefix, include_prefix=False):
+    return get_all_group1(lines, re.escape(prefix), include_prefix)
+
 def get_all_following(lines, prefix, include_prefix=False):
     if include_prefix:
         regex = "("+prefix+".*)"

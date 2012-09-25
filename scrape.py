@@ -155,8 +155,6 @@ class Scraper:
         return stdout_lines
 
     def scrape(self, top_dir):
-        exp_dirs = [os.path.join(top_dir,f) for f in os.listdir(top_dir) 
-                    if os.path.isdir(os.path.join(top_dir, f)) and f != ".svn"]
         for writer in self.writers:
             writer.write_top(top_dir)
         # Read README
@@ -165,7 +163,12 @@ class Scraper:
             lines = open(readme, 'r').readlines()
             for writer in self.writers:
                 writer.write_readme(lines)
-            
+                
+        exp_dirs = [os.path.join(top_dir,f) for f in os.listdir(top_dir) 
+                    if os.path.isdir(os.path.join(top_dir, f)) and f != ".svn"]
+        self.scrape_exp_dirs(exp_dirs)
+    
+    def scrape_exp_dirs(self, exp_dirs):
         # Read experiment directories
         exp_list = []
         for exp_dir in sorted(exp_dirs):
@@ -175,7 +178,6 @@ class Scraper:
                 sys.stderr.write("Reading %s\n" % (name))
                 
                 exp = self.get_exp_params_instance()
-                exp_list.append(exp)
                 
                 stdout_file = os.path.join(exp_dir,"stdout")
                 done_file = os.path.join(exp_dir,"DONE")
@@ -191,6 +193,7 @@ class Scraper:
                     _, _, elapsed = get_time(stdout_lines)
                     exp.update(elapsed = elapsed)
                     exp.update(timeRemaining = get_following_literal(stdout_lines, "Time remaining: ", -1))
+                    exp_list.append(exp)
                 else:
                     # Read experiment parameters
                     exp.read(os.path.join(exp_dir, "expparams.txt"))
@@ -198,7 +201,14 @@ class Scraper:
                     # Read stdout
                     self.scrape_errors(exp, exp_dir, stdout_file)
                     self.scrape_exp(exp, exp_dir, stdout_file)
-                
+                    
+                    # Optionally add status lines
+                    status_exps = self.scrape_exp_statuses(exp, exp_dir, stdout_file)
+                    if status_exps is not None:
+                        for status_exp in status_exps:
+                            exp_list.append(status_exp)
+                    else:
+                        exp_list.append(exp)
             except Exception, e:
                 for writer in self.writers:
                     writer.write_error(exp_dir)
@@ -245,6 +255,10 @@ class Scraper:
     def scrape_exp(self, exp, exp_dir, stdout_file):
         ''' OVERRIDE THIS METHOD '''
         pass
+    
+    def scrape_exp_statuses(self, exp, exp_dir, stdout_file):
+        ''' OVERRIDE THIS METHOD: return a list of ExpParam objects '''
+        return None
     
     def scrape_errors(self, exp, exp_dir, stdout_file):
         ''' Optionally override this method '''
