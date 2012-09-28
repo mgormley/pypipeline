@@ -41,25 +41,27 @@ class ResultsWriter:
 
 class CsvResultsWriter(ResultsWriter):
     
-    def __init__(self):
+    def __init__(self, out):
         self.sep = ","
         self.quote = '"'
+        self.out = out
         
-    def write_top(self, top_dir):
-        print top_dir
-    
     def csv_to_str(self, x):
+        '''Convert to a quoted string for this writer.'''
         if x.find(self.sep) != -1:
             x = '%s%s%s' % (self.quote, x, self.quote)
         return x
     
+    def write_top(self, top_dir):
+        self.writeln(top_dir)
+    
     def write_readme(self, lines):
         lines = " ".join(lines)
-        print '"' + lines.replace("\n"," ") + '"'
+        self.writeln('"' + lines.replace("\n"," ") + '"')
         
     def write_error(self, exp_dir):
         # TODO: should we post this to Google Spreadsheet?
-        print self.sep.join(map(to_str,[exp_dir,"ERROR"]))
+        self.writeln(self.sep.join(map(to_str,[exp_dir,"ERROR"])))
        
     def write_results(self, key_order, values_list, get_as_str):
         key_order, values_list = self.get_all_as_strs(key_order, values_list, get_as_str)
@@ -68,15 +70,19 @@ class CsvResultsWriter(ResultsWriter):
         
     def _write_results(self, key_order, values_list, get_as_str):
         # Print exp_list
-        print self.sep.join(key_order)
+        self.writeln(self.sep.join(key_order))
         for values in values_list:
-            print self.sep.join(values)
-        print ""
+            self.writeln(self.sep.join(values))
+        self.writeln("")
+    
+    def writeln(self, line):
+        '''Write a line to the output of this Writer.'''
+        self.out.write(line + "\n")
     
 class RprojResultsWriter(CsvResultsWriter):
         
-    def __init__(self):
-        CsvResultsWriter.__init__(self)
+    def __init__(self, out):
+        CsvResultsWriter.__init__(self, out)
         self.sep = "\t"
         self.quote = '"'
         self.whitespace_re = re.compile("\s+")
@@ -143,12 +149,12 @@ class GoogleResultsWriter(CsvResultsWriter):
     
 class Scraper:
     
-    def __init__(self, print_csv=True, write_google=False, remain_only=False, print_rproj=False):
+    def __init__(self, print_csv=True, write_google=False, remain_only=False, print_rproj=False, out=sys.stdout):
         self.remain_only = remain_only
         self.writers = []
-        if print_rproj: self.writers.append(RprojResultsWriter())
+        if print_rproj: self.writers.append(RprojResultsWriter(out))
         if write_google: self.writers.append(GoogleResultsWriter())
-        if print_csv or len(self.writers) == 0: self.writers.append(CsvResultsWriter())
+        if print_csv or len(self.writers) == 0: self.writers.append(CsvResultsWriter(out))
 
     def read_stdout_lines(self, stdout_file):
         stdout_lines = open(stdout_file, 'r').readlines()

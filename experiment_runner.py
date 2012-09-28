@@ -34,6 +34,10 @@ class ExpParams:
         self.paramsep = "\n"
         self.none_string = ""
         self.key_order = None
+        # The prefix for dummy keys
+        self.dummy_key_prefix = "__arg__"
+        # The separator for key/value parameters in the argument string
+        self.args_kvsep = " "
         
     def __add__(self, other):
         ''' Overloading operator + '''
@@ -87,7 +91,12 @@ class ExpParams:
     def getstr(self, key):
         ''' Returns a string version of the value '''
         return self._get_as_str(self.get(key))
-        
+    
+    def add_arg(self, arg):
+        ''' Adds an command line argument which will be printed without its key.'''
+        dummy_key = self.dummy_arg_prefix + str(len(self.params))        
+        set(dummy_key, arg, True, True)
+    
     def read(self, path):
         ''' Read parameter names and values from a file '''
         filestr = "".join(open(path, 'r').readlines())
@@ -105,7 +114,7 @@ class ExpParams:
         ''' Write out parameter names and values to a file '''
         out = open(path, 'w')
         for key,value,exclude_name,exclude_arg in self._get_string_params():
-            out.write("".join([key, self.kvsep, value, self.kvsep, exclude_name, self.kvsep, exclude_arg, self.paramsep])) 
+            out.write(self.kvsep.join([key, value, exclude_name, exclude_arg]) + self.paramsep) 
         out.close()
         
     def get_name(self):
@@ -120,9 +129,17 @@ class ExpParams:
     def get_args(self):
         ''' Returns a string consisting of the arguments defined by the parameters of this experiment '''
         args = ""
+        # Add the key/value arguments.
         for key,value in self.params.items():
-            if key not in self.exclude_arg_keys:
-                args += "--%s %s " % (self._get_as_str(key), self._get_as_str(value))
+            if key not in self.exclude_arg_keys and not key.startswith(self.dummy_arg_prefix):
+                if value is None:
+                    args += "--%s " % (self._get_as_str(key))
+                else:
+                    args += "--%s%s%s " % (self._get_as_str(key), self.args_kvsep, self._get_as_str(value))
+        # Add the additional command line arguments.
+        for key,value in self.params.items():
+            if key not in self.exclude_arg_keys and key.startswith(self.dummy_arg_prefix):
+                args += "%s " % (self._get_as_str(value))
         return args
             
     def _get_as_str(self, value):
@@ -212,6 +229,22 @@ class JavaExpParams(ExpParams):
         
         return java_args
     
+    def get_instance(self):
+        ''' OVERRIDE THIS METHOD '''
+        return JavaExpParams()
+    
+
+class PythonExpParams(ExpParams):
+    
+    def __init__(self, dictionary=None, **keywords):
+        dictionary.update(keywords)
+        ExpParams.__init__(self,dictionary)
+        self.args_kvsep = "="
+    
+    def get_instance(self):
+        ''' OVERRIDE THIS METHOD '''
+        return PythonExpParams()
+            
 class ExpParamsStage(Stage):
     
     def __init__(self, expparams, eprunner):
