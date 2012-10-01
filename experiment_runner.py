@@ -94,8 +94,8 @@ class ExpParams:
     
     def add_arg(self, arg):
         ''' Adds an command line argument which will be printed without its key.'''
-        dummy_key = self.dummy_arg_prefix + str(len(self.params))        
-        set(dummy_key, arg, True, True)
+        dummy_key = self.dummy_key_prefix + str(len(self.params))        
+        self.set(dummy_key, arg, True, True)
     
     def read(self, path):
         ''' Read parameter names and values from a file '''
@@ -131,14 +131,14 @@ class ExpParams:
         args = ""
         # Add the key/value arguments.
         for key,value in self.params.items():
-            if key not in self.exclude_arg_keys and not key.startswith(self.dummy_arg_prefix):
+            if key not in self.exclude_arg_keys and not key.startswith(self.dummy_key_prefix):
                 if value is None:
                     args += "--%s " % (self._get_as_str(key))
                 else:
                     args += "--%s%s%s " % (self._get_as_str(key), self.args_kvsep, self._get_as_str(value))
         # Add the additional command line arguments.
         for key,value in self.params.items():
-            if key not in self.exclude_arg_keys and key.startswith(self.dummy_arg_prefix):
+            if key not in self.exclude_arg_keys and key.startswith(self.dummy_key_prefix):
                 args += "%s " % (self._get_as_str(value))
         return args
             

@@ -149,9 +149,13 @@ class GoogleResultsWriter(CsvResultsWriter):
     
 class Scraper:
     
-    def __init__(self, print_csv=True, write_google=False, remain_only=False, print_rproj=False, out=sys.stdout):
+    def __init__(self, print_csv=True, write_google=False, remain_only=False, print_rproj=False, out_file=None):
         self.remain_only = remain_only
         self.writers = []
+        if out_file:
+            out = open(out_file, 'w')
+        else:
+            out = sys.stdout
         if print_rproj: self.writers.append(RprojResultsWriter(out))
         if write_google: self.writers.append(GoogleResultsWriter())
         if print_csv or len(self.writers) == 0: self.writers.append(CsvResultsWriter(out))
