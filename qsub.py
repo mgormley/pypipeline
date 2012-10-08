@@ -9,7 +9,7 @@ def get_wisp_qsub_args(queue, threads, work_mem_megs, time="08:00:00"):
     return " -q %s -l num_proc=%d,mem_free=%dM,h_rt=%s " % (queue, threads, work_mem_megs, time)
 
 def get_clsp_qsub_args(threads, work_mem_megs):
-    return " -q all.q -pe smp %d -l cpu_arch=x86_64 -l mem_free=%dM " % (threads, work_mem_megs)
+    return " -q all.q -pe smp %d -l cpu_arch=x86_64,mem_free=%dM,ram_free=%dM " % (threads, work_mem_megs)
 
 def get_qsub_args(queue):
     if queue == "clsp-mem":
