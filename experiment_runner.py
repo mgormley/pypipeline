@@ -20,7 +20,23 @@ from util import get_new_file
 from pipeline import Stage, PipelineRunner, RootStage
 from collections import defaultdict
 from experiments.core.pipeline import NamedStage
- 
+
+def get_subset(expparams_list, **keywords):
+    '''Gets the subset of ExpParams objects for which all the keywords specified
+    are also parameters for that ExpParams.
+    '''
+    subset = []
+    for expparams in expparams_list:
+        # Check whether this stage matches all the key/value pairs specified.
+        contains_all = True
+        for k,v in keywords.items():
+            if not expparams.get(k) == v:
+                contains_all = False
+                break
+        if contains_all:
+            subset.append(expparams)
+    return subset
+
 class ExpParams(Stage):
     
     def __init__(self, dictionary=None, **keywords):
