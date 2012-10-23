@@ -1,5 +1,8 @@
 #!/usr/bin/python
 
+''' This entire module is deprecated.
+'''
+
 import sys
 import os
 import getopt
