@@ -19,10 +19,12 @@ from util import get_new_directory
 from util import get_new_file
 from pipeline import Stage, PipelineRunner, RootStage
 from collections import defaultdict
-        
-class ExpParams:
+from experiments.core.pipeline import NamedStage
+ 
+class ExpParams(Stage):
     
     def __init__(self, dictionary=None, **keywords):
+        Stage.__init__(self)
         self.params = {}
         self.exclude_name_keys = set()
         self.exclude_arg_keys = set()
@@ -38,14 +40,25 @@ class ExpParams:
         self.dummy_key_prefix = "__arg__"
         # The separator for key/value parameters in the argument string
         self.args_kvsep = " "
-        
+            
+    def create_stage_script(self, exp_dir):
+        '''Creates and returns the experiment script and writes the expparams.txt file.
+        Overriding method for Stage.
+        '''
+        # Creates and returns the experiment script string. 
+        script = self.create_experiment_script(exp_dir)
+        # Write out the experiment parameters to a file
+        # Do this after create_experiment_script in case there are additions to the parameters
+        # made by that call.
+        self.write(os.path.join(exp_dir, "expparams.txt"))
+        return script
+
     def __add__(self, other):
         ''' Overloading operator + '''
         return self.concat(other)
     
     def concat(self, other):
-        '''
-        Returns a copy of self plus all the parameters of other.
+        '''Returns a copy of self plus all the parameters of other.
         Note that other's params override self.
         '''
         if isinstance(other, ExpParams):
@@ -197,7 +210,7 @@ class ExpParams:
         ''' OVERRIDE THIS METHOD '''
         return ExpParams()
     
-    def create_experiment_script(self, exp_dir, eprunner):
+    def create_experiment_script(self, exp_dir):
         ''' 
         OVERRIDE THIS METHOD. 
         Returns a str to be written out as the experiment script 
@@ -210,8 +223,8 @@ class JavaExpParams(ExpParams):
         dictionary.update(keywords)
         ExpParams.__init__(self,dictionary)
             
-    def get_java_args(self, eprunner):
-        return self._get_java_args(eprunner.work_mem_megs)
+    def get_java_args(self):
+        return self._get_java_args(self.work_mem_megs)
     
     def _get_java_args(self, total_work_mem_megs):
         '''Returns reasonable JVM args based on the total megabytes available'''
@@ -244,25 +257,6 @@ class PythonExpParams(ExpParams):
     def get_instance(self):
         ''' OVERRIDE THIS METHOD '''
         return PythonExpParams()
-            
-class ExpParamsStage(Stage):
-    
-    def __init__(self, expparams, eprunner):
-        Stage.__init__(self, expparams.get_name())
-        self.expparams = expparams
-        self.eprunner = eprunner
-
-    def create_stage_script(self, exp_dir):
-        # Create and return the experiment script string
-        script = self.expparams.create_experiment_script(exp_dir, self.eprunner)
-        # Write out the experiment parameters to a file
-        # Do this after create_experiment_script in case there are additions to the parameters
-        # made by that call.
-        self.expparams.write(os.path.join(exp_dir, "expparams.txt"))
-        return script
-
-    def __str__(self):
-        return self.name
 
 def shorten_names(expparams):
     ''' Shortens the names of a set of expparams '''
@@ -289,18 +283,9 @@ class ExpParamsRunner(PipelineRunner):
     def __init__(self,name, queue):
         PipelineRunner.__init__(self, name, queue)
 
-    def run_experiments(self, experiments):
+    def run_experiments(self, exp_stages):
         root_stage = RootStage()
-        prereqs = self.get_prereqs()
-        if prereqs and (not prereqs == []):
-            # We call _get_exp_stages for prereqs first so that the dfs in our
-            # overrided get_stages_as_list still works correctly
-            prereqs = self._get_exp_stages(prereqs, root_stage)
-        exp_stages = self._get_exp_stages(experiments, root_stage)
-        if prereqs:
-            for exp_stage in exp_stages:
-                for prereq in prereqs:
-                    exp_stage.add_prereq(prereq)
+        root_stage.add_dependents(exp_stages)
         self.run_pipeline(root_stage)
         
     def run_pipeline(self, root_stage):
@@ -308,55 +293,34 @@ class ExpParamsRunner(PipelineRunner):
         PipelineRunner.run_pipeline(self, root_stage)
         
     def shorten_names_epstages(self, root_stage):
-        # TODO: note that this is awkwardly a class-method only
-        #   because get_stages_as_list is a class-method
-        # Shorten the names
-        experiments = [stage.expparams for stage in self.get_stages_as_list(root_stage) if not isinstance(stage, RootStage)]
-        shorten_names(experiments)
-        # Update the names on the stages
+        # TODO: note that this is only a class-method only
+        #   because get_stages_as_list is a class-method.
+        expparams = []
         for stage in self.get_stages_as_list(root_stage):
-            if not isinstance(stage, RootStage):
-                stage.set_name(stage.expparams.get_name())
-    
-    def _get_exp_stages(self, expparams, root_stage):
-        exp_stages = []
-        for expparam in expparams:
-            exp_stage = ExpParamsStage(expparam,self)
-            exp_stage.add_prereq(root_stage)
-            exp_stages.append(exp_stage)
-        return exp_stages
-    
-    def create_post_processing_stage_script(self, top_dir, all_stages):
-        all_stages = all_stages[1:]
-        exp_tuples = [(stage.name, stage.expparams) for stage in all_stages]
-        return self.create_post_processing_script(top_dir, exp_tuples)
-    
+            if isinstance(stage, ExpParams):
+                expparams.append(stage)
+        shorten_names(expparams)
+        
     def get_stages_as_list(self, root_stage):
         '''This method is overriden to give the provided order for experiments'''
         return self.bfs_stages(root_stage)
-    
-    def create_post_processing_script(self, top_dir, exp_tuples):
-        ''' Override this method '''
-        return None
 
-    def get_prereqs(self):
-        ''' Override this method '''
-        return None
-
-class ExperimentStage(Stage):
-    
+class ExperimentStage(NamedStage):
+    '''Deprecated.'''
+        
     def __init__(self, name, experiment, exp_runner):
-        Stage.__init__(self, name)
+        NamedStage.__init__(self, name)
         self.exp_runner = exp_runner
         self.experiment = experiment
 
     def create_stage_script(self, exp_dir):
-        return self.exp_runner.create_experiment_script(self.name, self.experiment, exp_dir)
+        return self.exp_runner.create_experiment_script(self.get_name(), self.experiment, exp_dir)
 
     def __str__(self):
-        return self.name
+        return self.get_name()
 
 class ExperimentRunner(PipelineRunner):
+    '''Deprecated.'''
     
     def __init__(self,name="experiments",serial=False):
         if serial == True:
@@ -372,21 +336,12 @@ class ExperimentRunner(PipelineRunner):
             exp_stage = ExperimentStage(name, experiment, self)
             exp_stage.add_prereq(root_stage)
         self.run_pipeline(root_stage)
-
-    def create_post_processing_stage_script(self, top_dir, all_stages):
-        all_stages = all_stages[1:]
-        exp_tuples = [(stage.name, stage.experiment) for stage in all_stages]
-        return self.create_post_processing_script(top_dir, exp_tuples)
-    
+        
     def get_stages_as_list(self, root_stage):
         '''This method is overriden to give the provided order for experiments'''
         return self.bfs_stages(root_stage)
         
     def create_experiment_script(self, name, experiment, exp_dir):
-        ''' Override this method '''
-        return None
-    
-    def create_post_processing_script(self, top_dir, exp_tuples):
         ''' Override this method '''
         return None
 

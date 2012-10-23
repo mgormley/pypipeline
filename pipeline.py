@@ -18,7 +18,8 @@ import topological
 from util import get_new_directory
 from util import get_new_file
 import random
-from qsub import get_qsub_args
+from experiments.core.qsub import get_default_qsub_params, get_qsub_args,\
+    get_default_qsub_params
 
 def write_script(prefix, script, dir):
     out, script_file = get_new_file(prefix=prefix,suffix=".sh",dir=dir)
@@ -51,28 +52,47 @@ def get_unique_name(name):
     return name + str(unique_num)
 
 class Stage:
-    def __init__(self, name, completion_indicator="DONE"):
+    '''A stage in a pipeline to be run after the stages in prereqs and before the 
+    stages in dependents.
+    
+    Attributes:
+        cwd: Current working directory for this stage (Set by PipelineRunner).
+        serial: True iff this stage will be run in a pipeline using bash, one stage at a time (Set by PipelineRunner).
+        root_dir: Path to root directory for this project (Set by PipelineRunner).
+        work_mem_megs: Megabytes required by this stage (Default provided by PipelineRunner). 
+        threads: Number of threads used by this stage (Default provided by PipelineRunner).
+        minutes: Number of minutes used by this stage (Default provided by PipelineRunner).
+        qsub_args: The SGE qsub arguments for running the job (Set by PipelineRunner).
+        qdel_script_file: Path to qdel script for this stage (Set by _run_stage when self.serial is True).
+        
+    Private attributes:
+        prereqs: List of stages that should run before this stage.
+        dependents: List of stages that should run after this stage.
+        completion_indicator: Filename to be created upon successful completion.
+    '''
+    
+    def __init__(self, completion_indicator="DONE"):
         ''' If the default completion_indicator is used, it will be created in the cwd for this stage '''
-        self.set_name(name)
         self.completion_indicator = completion_indicator
         self.prereqs = []
         self.dependents = []
-        self.serial = False        
+        self.cwd = None
+        self.serial = False
+        self.root_dir = None        
+        self.work_mem_megs = None
+        self.threads = None
+        self.minutes = None
         self.qsub_args = None
+        self.qdel_script_file = None
         
-    def set_name(self, name):
-        self.name = str(name) #TODO: is this the best way to handle name's type?
-        # Create a more unique name for qsub so that multiple the kill script only kills its own job
-        self.qsub_name = "%s_%x" % (self.name, random.randint(0, sys.maxint))
-        # If qsub name does not begin with a letter, add an "a"
-        matcher = re.compile('^[a-z,A-Z]').search(self.qsub_name)
-        if not matcher:
-            self.qsub_name = 'a'+self.qsub_name
-            
     def add_dependent(self, stage):
         stage.prereqs.append(self)
         self.dependents.append(stage)
-        
+    
+    def add_dependents(self, stages):
+        for stage in stages:
+            self.add_dependent(stage)
+            
     def add_prereq(self, stage):
         self.prereqs.append(stage)
         stage.dependents.append(self)
@@ -80,11 +100,21 @@ class Stage:
     def add_prereqs(self, stages):
         for stage in stages:
             self.add_prereq(stage)
-    
+        
+    def get_qsub_name(self):
+        '''Gets the SGE job name.'''
+        # Create a more unique name for qsub so that multiple the kill script only kills its own job
+        qsub_name = "%s_%x" % (self.get_name(), random.randint(0, sys.maxint))
+        # If qsub name does not begin with a letter, add an "a"
+        matcher = re.compile('^[a-z,A-Z]').search(qsub_name)
+        if not matcher:
+            qsub_name = 'a'+qsub_name
+        return qsub_name
+            
     def run_stage(self, exp_dir):
         os.chdir(exp_dir)
-        if self.is_already_completed():
-            print "Skipping completed stage: name=" + self.name + " completion_indicator=" + self.completion_indicator
+        if self._is_already_completed():
+            print "Skipping completed stage: name=" + self.get_name() + " completion_indicator=" + self.completion_indicator
             return
         self._run_stage(exp_dir)
         
@@ -97,53 +127,72 @@ class Stage:
         # script += "\n"
         
         script += self.create_stage_script(exp_dir)
-        #TODO: this is a hack. This should wrap the experiment script
+        # TODO: this is a hack. This should create another script that calls the experiment
+        # script, not modify it.
         script += "\ntouch '%s'\n" % (self.completion_indicator)        
         script_file = write_script("experiment-script", script, exp_dir)
-        self.run_script(script_file, exp_dir)
+        self._run_script(script_file, exp_dir)
 
     def __str__(self):
-        return self.name
+        return self.get_name()
 
-    def is_already_completed(self):
+    def _is_already_completed(self):
         if not os.path.exists(self.completion_indicator):
             return False
         for prereq in self.prereqs:
-            if not prereq.is_already_completed():
+            if not prereq._is_already_completed():
                 return False
         return True
 
-    def run_script(self, script_file, cwd, stdout_filename="stdout"):
-        stdout = os.path.join(cwd, stdout_filename)
+    def _run_script(self, script_file, cwd, stdout_filename="stdout"):
+        stdout_path = os.path.join(cwd, stdout_filename)
         os.chdir(cwd)
         assert(os.path.exists(script_file))
         if self.serial:
             command = "bash %s" % (script_file)
-            print self.name,":",command
-            stdout = open(stdout, 'w')
+            print self.get_name(),":",command
+            stdout = open(stdout_path, 'w')
             p = Popen(args=shlex.split(command), cwd=cwd, stderr=subprocess.STDOUT, stdout=stdout)
             retcode = p.wait()
             stdout.close()
             if (retcode != 0):
+                # Print out the last few lines of the failed stage's stdout file.
+                os.system("tail -n 15 %s" % (stdout_path))
                 raise subprocess.CalledProcessError(retcode, command)
             #Old way: subprocess.check_call(shlex.split(command))
         else:
-            prereq_names = [prereq.qsub_name for prereq in self.prereqs]
-            qsub_script = create_queue_command(script_file, cwd, self.qsub_name, prereq_names, stdout, self.qsub_args)
+            prereq_names = [prereq.get_qsub_name() for prereq in self.prereqs]
+            qsub_script = create_queue_command(script_file, cwd, self.get_qsub_name(), prereq_names, stdout_path, self.qsub_args)
             qsub_script_file = write_script("qsub-script", qsub_script, cwd)
             print qsub_script
             subprocess.check_call(shlex.split("bash %s" % (qsub_script_file)))
-            qdel_script = "qdel %s" % (self.qsub_name)
+            qdel_script = "qdel %s" % (self.get_qsub_name())
             self.qdel_script_file = write_script("qdel-script", qdel_script, cwd)
             
     def create_stage_script(self, exp_dir):
         ''' Override this method '''
         return None
 
-class GridShardRunnerStage(Stage):
+    def get_name(self):
+        '''Override this method.
+        
+        Gets display name of this stage and stage directory name.
+        '''
+        return None
+
+class NamedStage(Stage):
+    
+    def __init__(self, name, completion_indicator="DONE"):
+        Stage.__init__(self, completion_indicator)
+        self._name = str(name) #TODO: is this the best way to handle name's type?
+
+    def get_name(self):
+        return self._name
+
+class GridShardRunnerStage(NamedStage):
 
     def __init__(self, name, input_shard_prefix, new_output_prefix=None, completion_indicator="DONE"):
-        Stage.__init__(self, name, completion_indicator)
+        NamedStage.__init__(self, name, completion_indicator)
         # TODO: move this
         self.files = self.get_files(input_shard_prefix)
         self.input_shard_prefix = input_shard_prefix
@@ -159,6 +208,8 @@ class GridShardRunnerStage(Stage):
         files.sort()
         return files
 
+    # TODO: Should this method be removed? Doesn't SGE and the topological sort
+    #   ensure that this will not run before its prereqs?
     # TODO: should throw an exception if there's an error in a prereq
     def wait_for_prereqs(self, prereqs):
         prereqs_complete = False
@@ -204,7 +255,7 @@ class GridShardRunnerStage(Stage):
         return ""
 
     def create_shard_stage(self, shard_number, input_file, output_file):
-        name = "%s-%s" % (self.name, str(shard_number))
+        name = "%s-%s" % (self.get_name(), str(shard_number))
         return ShardStage(name, input_file, output_file, self) 
 
     def create_shard_script(self, cwd, input_file, output_file):
@@ -215,11 +266,11 @@ class GridShardRunnerStage(Stage):
         #    command = '%s' % (self.script_name.replace('%INPUT_SHARD%', input_file))
         return None
 
-class ShardStage(Stage):
+class ShardStage(NamedStage):
     '''Helper class for GridShardRunnerStage'''
     
     def __init__(self, name, input_file, output_file, grid_shard_runner_stage):
-        Stage.__init__(self, name)
+        NamedStage.__init__(self, name)
         self.input_file = input_file
         self.output_file = output_file
         self.grid_shard_runner_stage = grid_shard_runner_stage
@@ -227,19 +278,19 @@ class ShardStage(Stage):
     def create_stage_script(self, cwd):
         return self.grid_shard_runner_stage.create_shard_script(cwd, self.input_file, self.output_file)
 
-class ScriptStringStage(Stage):
+class ScriptStringStage(NamedStage):
     
     def __init__(self, name, script, completion_indicator="DONE"):
-        Stage.__init__(self, name, completion_indicator)
+        NamedStage.__init__(self, name, completion_indicator)
         self.script = script
 
     def create_stage_script(self, exp_dir):
         return self.script
 
-class RootStage(Stage):
+class RootStage(NamedStage):
     
     def __init__(self):
-        Stage.__init__(self, "root_stage")
+        NamedStage.__init__(self, "root_stage")
         
     def run_stage(self, exp_dir):
         # Intentionally a no-op
@@ -250,47 +301,58 @@ class PipelineRunner:
     def __init__(self,name="experiments",queue=None):
         self.name = name
         self.serial = (queue == None)
-
+        self.root_dir = os.path.abspath(".") 
+        
         # Setup arguments for qsub
         self.queue = queue
-        (qsub_args, threads, work_mem_megs) = get_qsub_args(queue)
-        self.qsub_args = qsub_args
+        (threads, work_mem_megs, minutes) = get_default_qsub_params(queue)
         self.threads = threads
         self.work_mem_megs = work_mem_megs
+        self.minutes = minutes
         
     def run_pipeline(self, root_stage):
         self.check_stages(root_stage)
-        top_dir = get_new_directory(prefix=self.name, dir="exp")
+        top_dir = get_new_directory(prefix=self.name, dir=os.path.join(self.root_dir, "exp"))
         os.chdir(top_dir)
-        self.add_post_processing_stage(root_stage, top_dir)
         for stage in self.get_stages_as_list(root_stage):
-            if stage.name == "root_stage":
+            if isinstance(stage, RootStage):
                 continue
-            cwd = os.path.join(top_dir, str(stage.name))
+            cwd = os.path.join(top_dir, str(stage.get_name()))
             os.mkdir(cwd)
-            stage.serial = self.serial
-            stage.cwd = cwd
-            stage.work_mem_megs = self.work_mem_megs
-            if stage.qsub_args == None:
-                # Give each stage the global qsub_args if it has none
-                stage.qsub_args = self.qsub_args
+            self._update_stage(stage, cwd)
             stage.run_stage(cwd)
         if not self.serial:
             # Create a global qdel script
             global_qdel = ""
             for stage in self.get_stages_as_list(root_stage):
-                if stage.name == "root_stage":
+                if isinstance(stage, RootStage):
                     continue
                 global_qdel += "bash %s\n" % (stage.qdel_script_file)
             write_script("global-qdel-script", global_qdel, top_dir)
-            
+    
+    def _update_stage(self, stage, cwd):
+        '''Set some additional parameters on the stage.'''
+        stage.cwd = cwd
+        stage.serial = self.serial
+        stage.root_dir = self.root_dir
+        # Use defaults for threads, work_mem_megs, and minutes if they are not
+        # set on the stage.
+        if stage.threads is None:
+            stage.threads = self.threads
+        if stage.work_mem_megs is None:
+            stage.work_mem_megs = self.work_mem_megs
+        if stage.minutes is None:
+            stage.minutes = self.minutes
+        # Get the stage's qsub args.
+        stage.qsub_args = get_qsub_args(self.queue, stage.threads, stage.work_mem_megs, stage.minutes)
+        
     def check_stages(self, root_stage):
         all_stages = self.get_stages_as_list(root_stage)
         names = set()
         for stage in all_stages:
-            assert stage.name not in names, "Multiple stages have the same name: " + stage.name + "\n" + str([s.name for s in all_stages])
-            names.add(stage.name)
-        print "all_stages(names):",[stage.name for stage in all_stages]                    
+            assert stage.get_name() not in names, "Multiple stages have the same name: " + stage.get_name() + "\n" + str([s.get_name() for s in all_stages])
+            names.add(stage.get_name())
+        print "all_stages(names):",[stage.get_name() for stage in all_stages]                    
             
     def get_stages_as_list(self, root_stage):
         partial_order = []
@@ -321,20 +383,6 @@ class PipelineRunner:
                 stages.append(stage)
             queue.extend(stage.dependents)
         return stages
-
-    # TODO: consider removing this - it is only for convenience
-    def add_post_processing_stage(self, root_stage, top_dir):
-        all_stages = self.dfs_stages(root_stage)
-        post = self.create_post_processing_stage_script(top_dir, all_stages)
-        if (post == None):
-            return
-        post_file = write_script("post-processing", post, top_dir)
-        post_stage = ScriptStringStage("post-processing", "bash '%s'" % (post_file))
-        post_stage.add_prereqs(all_stages)
-
-    def create_post_processing_stage_script(self, top_dir, all_stages):
-        ''' Override this method '''
-        return None
 
 if __name__ == '__main__':
     print "This script is not to be run directly"
