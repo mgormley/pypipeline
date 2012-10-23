@@ -150,7 +150,7 @@ def get_new_directory(prefix="temp", suffix="", dir=None):
     def f(path):
         os.mkdir(path)
         return path
-    return get_new_path(f, prefix=prefix, suffix=suffix,dir=dir)
+    return get_new_path(f, prefix=prefix, suffix=suffix, dir=dir)
 
 def get_new_file(prefix="temp", suffix="", dir=None):
     def f(path):
