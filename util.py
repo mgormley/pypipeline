@@ -109,6 +109,15 @@ def get_all_group1(lines, regex_str):
             values.append(match.group(1))
     return values
 
+def get_all_matches(lines, regex_str):
+    regex = re.compile(regex_str)
+    match_list = []
+    for line in lines:
+        match = regex.search(line)
+        if match != None:
+            match_list.append(match)
+    return match_list
+
 def get_by_index(values, index):
     if index < len(values) and index > -len(values):
         return values[index]
