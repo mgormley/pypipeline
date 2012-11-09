@@ -84,7 +84,10 @@ class Stage:
         self.minutes = None
         self.qsub_args = None
         self.qdel_script_file = None
-        
+        # A fixed random number to distinguish this task from
+        # other runs of this same task within qsub.
+        self.qsub_rand = random.randint(0, sys.maxint)
+
     def always_relaunch(self):
         # We add a non-canonical completion indicator in order to ensure
         # that this job will always relaunch.
@@ -109,7 +112,7 @@ class Stage:
     def get_qsub_name(self):
         '''Gets the SGE job name.'''
         # Create a more unique name for qsub so that multiple the kill script only kills its own job
-        qsub_name = "%s_%x" % (self.get_name(), random.randint(0, sys.maxint))
+        qsub_name = "%s_%x" % (self.get_name(), self.qsub_rand)
         # If qsub name does not begin with a letter, add an "a"
         matcher = re.compile('^[a-z,A-Z]').search(qsub_name)
         if not matcher:
