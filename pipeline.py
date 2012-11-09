@@ -85,6 +85,11 @@ class Stage:
         self.qsub_args = None
         self.qdel_script_file = None
         
+    def always_relaunch(self):
+        # We add a non-canonical completion indicator in order to ensure
+        # that this job will always relaunch.
+        self.completion_indicator = "DONE_BUT_RELAUNCH"
+        
     def add_dependent(self, stage):
         stage.prereqs.append(self)
         self.dependents.append(stage)
