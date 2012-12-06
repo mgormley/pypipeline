@@ -13,8 +13,6 @@ from util import get_new_file, sweep_mult, fancify_cmd,\
     sweep_mult_low
 import platform
 from glob import glob
-from experiment_runner import ExpParamsRunner
-import experiment_runner
 import shutil
 from pipeline import write_script, RootStage, Stage
 

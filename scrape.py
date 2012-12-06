@@ -11,7 +11,7 @@ import subprocess
 from optparse import OptionParser
 from glob import glob
 from .util import get_all_following, get_following, get_time,\
-    to_str, get_following_literal
+    to_str, get_following_literal, tail
 from .google_spreadsheets import get_spreadsheet_by_title,\
     get_first_worksheet, clear_worksheet, write_row
 import getpass
@@ -160,8 +160,15 @@ class Scraper:
         if write_google: self.writers.append(GoogleResultsWriter())
         if print_csv or len(self.writers) == 0: self.writers.append(CsvResultsWriter(out))
 
-    def read_stdout_lines(self, stdout_file):
-        stdout_lines = open(stdout_file, 'r').readlines()
+    def read_stdout_lines(self, stdout_file, max_lines=sys.maxint):
+        if max_lines == sys.maxint:
+            stdout_lines = open(stdout_file, 'r').readlines()
+        else:
+            stdout_lines = []
+            for i,line in enumerate(open(stdout_file, 'r')):
+                if i >= max_lines:
+                    break
+                stdout_lines.append(line)
         return stdout_lines
 
     def scrape(self, top_dir):
@@ -186,7 +193,8 @@ class Scraper:
                 # Read name
                 name = os.path.basename(exp_dir)
                 sys.stderr.write("Reading %s\n" % (name))
-                
+                sys.stderr.flush()
+
                 exp = self.get_exp_params_instance()
                 
                 stdout_file = os.path.join(exp_dir,"stdout")
@@ -272,7 +280,8 @@ class Scraper:
     
     def scrape_errors(self, exp, exp_dir, stdout_file):
         ''' Optionally override this method '''
+        stdout_lines = tail(stdout_file, 500)
         # Check for errors:
-        error = get_following(stdout_file, "Exception in thread \"main\" ", 0, False)
-        if error == None: error = get_following(stdout_file, "Error ", 0, True)
+        error = get_following(stdout_lines, "Exception in thread \"main\" ", 0, False)
+        if error == None: error = get_following(stdout_lines, "Error ", 0, True)
         exp.update(error = error)
