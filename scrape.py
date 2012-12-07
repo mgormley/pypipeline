@@ -147,18 +147,33 @@ class GoogleResultsWriter(CsvResultsWriter):
     def write_error(self, exp_dir):
         pass
     
+    
+def add_options(parser):
+    '''Takes an OptionParser as input and adds the appropriate options for the Scraper'''
+    parser.add_option('--remain', action="store_true", help="Scrape for time remaining only")
+    parser.add_option('--tsv_file', help="Out file for R-project")
+    parser.add_option('--csv_file', help="Out file for CSV")
+    parser.add_option('--google', action="store_true", help="Print out for Google Docs")
+
+
 class Scraper:
     
-    def __init__(self, print_csv=True, write_google=False, remain_only=False, print_rproj=False, out_file=None):
-        self.remain_only = remain_only
+    def __init__(self, options):
+        self.remain_only = options.remain
         self.writers = []
-        if out_file:
-            out = open(out_file, 'w')
-        else:
-            out = sys.stdout
-        if print_rproj: self.writers.append(RprojResultsWriter(out))
-        if write_google: self.writers.append(GoogleResultsWriter())
-        if print_csv or len(self.writers) == 0: self.writers.append(CsvResultsWriter(out))
+        self.closeables = []
+        if options.tsv_file:
+            tsv_out = open(options.tsv_file, 'w')
+            self.writers.append(RprojResultsWriter(tsv_out))
+            self.closeables.append(tsv_out)
+        if options.csv_file:
+            csv_out = open(options.csv_file, 'w')
+            self.writers.append(CsvResultsWriter(csv_out))
+            self.closeables.append(csv_out)
+        if options.google:
+            self.writers.append(GoogleResultsWriter())
+        if len(self.writers) == 0: 
+            self.writers.append(RprojResultsWriter(sys.stdout))
 
     def read_stdout_lines(self, stdout_file, max_lines=sys.maxint):
         if max_lines == sys.maxint:
@@ -261,6 +276,10 @@ class Scraper:
         
         for writer in self.writers:
             writer.write_results(key_order, values_list, exp_orderer._get_as_str)
+            
+        # Close any open files.
+        for f in self.closeables:
+            f.close()
 
     def get_exp_params_instance(self):
         ''' OVERRIDE THIS METHOD: return an ExpParams object '''
