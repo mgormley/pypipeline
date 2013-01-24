@@ -360,7 +360,8 @@ class PipelineRunner:
         for stage in all_stages:
             assert stage.get_name() not in names, "Multiple stages have the same name: " + stage.get_name() + "\n" + str([s.get_name() for s in all_stages])
             names.add(stage.get_name())
-        print "all_stages(names):",[stage.get_name() for stage in all_stages]                    
+        print "all_stages(names):",[stage.get_name() for stage in all_stages]
+        print "num_stages:", len(all_stages)                    
             
     def get_stages_as_list(self, root_stage):
         partial_order = []
