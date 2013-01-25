@@ -64,6 +64,7 @@ class Stage:
         minutes: Number of minutes used by this stage (Default provided by PipelineRunner).
         qsub_args: The SGE qsub arguments for running the job (Set by PipelineRunner).
         qdel_script_file: Path to qdel script for this stage (Set by _run_stage when self.serial is True).
+        print_to_console: Whether to print stdout/stderr to the console (Set by PipelineRunner).
         
     Private attributes:
         prereqs: List of stages that should run before this stage.
@@ -84,6 +85,7 @@ class Stage:
         self.minutes = None
         self.qsub_args = None
         self.qdel_script_file = None
+        self.print_to_console = None
         # A fixed random number to distinguish this task from
         # other runs of this same task within qsub.
         self.qsub_rand = random.randint(0, sys.maxint)
@@ -160,8 +162,20 @@ class Stage:
             command = "bash %s" % (script_file)
             print self.get_name(),":",command
             stdout = open(stdout_path, 'w')
-            p = Popen(args=shlex.split(command), cwd=cwd, stderr=subprocess.STDOUT, stdout=stdout)
-            retcode = p.wait()
+            if not self.print_to_console:
+                # Print stdout only to a file.
+                p = Popen(args=shlex.split(command), cwd=cwd, stderr=subprocess.STDOUT, stdout=stdout)
+                retcode = p.wait()
+            else:
+                # Print out stdout to the console and to the file.
+                p = Popen(args=shlex.split(command), cwd=cwd, stderr=subprocess.STDOUT, stdout=subprocess.PIPE)
+                for line in iter(p.stdout.readline, ''):
+                    try:
+                        stdout.write(line)
+                        print line,
+                    except:
+                        pass
+                retcode = p.wait()
             stdout.close()
             if (retcode != 0):
                 # Print out the last few lines of the failed stage's stdout file.
@@ -306,10 +320,11 @@ class RootStage(NamedStage):
 
 class PipelineRunner:
     
-    def __init__(self,name="experiments",queue=None):
+    def __init__(self,name="experiments", queue=None, print_to_console=False):
         self.name = name
         self.serial = (queue == None)
         self.root_dir = os.path.abspath(".") 
+        self.print_to_console = print_to_console
         
         # Setup arguments for qsub
         self.queue = queue
@@ -351,6 +366,8 @@ class PipelineRunner:
             stage.work_mem_megs = self.work_mem_megs
         if stage.minutes is None:
             stage.minutes = self.minutes
+        if stage.print_to_console is None:
+            stage.print_to_console = self.print_to_console
         # Get the stage's qsub args.
         stage.qsub_args = get_qsub_args(self.queue, stage.threads, stage.work_mem_megs, stage.minutes)
         
