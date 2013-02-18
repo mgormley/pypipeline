@@ -320,11 +320,12 @@ class RootStage(NamedStage):
 
 class PipelineRunner:
     
-    def __init__(self,name="experiments", queue=None, print_to_console=False):
+    def __init__(self,name="experiments", queue=None, print_to_console=False, rolling=False):
         self.name = name
         self.serial = (queue == None)
         self.root_dir = os.path.abspath(".") 
         self.print_to_console = print_to_console
+        self.rolling = rolling
         
         # Setup arguments for qsub
         self.queue = queue
@@ -335,12 +336,18 @@ class PipelineRunner:
         
     def run_pipeline(self, root_stage):
         self.check_stages(root_stage)
-        top_dir = get_new_directory(prefix=self.name, dir=os.path.join(self.root_dir, "exp"))
-        os.chdir(top_dir)
+        top_dir = os.path.join(self.root_dir, "exp")
+        if self.rolling:
+            exp_dir = os.path.join(top_dir, self.name)
+            os.system("rm -r %s" % (exp_dir))
+            # TODO: add support for rolling directories
+        else:
+            exp_dir = get_new_directory(prefix=self.name, dir=top_dir)
+        os.chdir(exp_dir)
         for stage in self.get_stages_as_list(root_stage):
             if isinstance(stage, RootStage):
                 continue
-            cwd = os.path.join(top_dir, str(stage.get_name()))
+            cwd = os.path.join(exp_dir, str(stage.get_name()))
             os.mkdir(cwd)
             self._update_stage(stage, cwd)
             stage.run_stage(cwd)
@@ -351,7 +358,7 @@ class PipelineRunner:
                 if isinstance(stage, RootStage):
                     continue
                 global_qdel += "bash %s\n" % (stage.qdel_script_file)
-            write_script("global-qdel-script", global_qdel, top_dir)
+            write_script("global-qdel-script", global_qdel, exp_dir)
     
     def _update_stage(self, stage, cwd):
         '''Set some additional parameters on the stage.'''
