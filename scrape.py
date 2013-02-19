@@ -182,6 +182,7 @@ class Scraper:
             stdout_lines = []
             for i,line in enumerate(open(stdout_file, 'r')):
                 if i >= max_lines:
+                    print "WARN: Read only the first %d lines of the file" % (max_lines)
                     break
                 stdout_lines.append(line)
         return stdout_lines
