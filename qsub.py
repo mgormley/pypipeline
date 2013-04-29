@@ -32,6 +32,9 @@ def get_default_qsub_params(queue):
     elif queue == "cpu2x":            
         threads = 2
         work_mem_megs = 4096
+    elif queue == "mem128":  
+        threads = 1
+        work_mem_megs = 120000
     elif queue == "himem":  
         threads = 1
         work_mem_megs = 16384
