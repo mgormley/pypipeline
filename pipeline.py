@@ -178,8 +178,9 @@ class Stage:
                 retcode = p.wait()
             stdout.close()
             if (retcode != 0):
-                # Print out the last few lines of the failed stage's stdout file.
-                os.system("tail -n 15 %s" % (stdout_path))
+                if not self.print_to_console:
+                    # Print out the last few lines of the failed stage's stdout file.
+                    os.system("tail -n 15 %s" % (stdout_path))
                 raise subprocess.CalledProcessError(retcode, command)
             #Old way: subprocess.check_call(shlex.split(command))
         else:
