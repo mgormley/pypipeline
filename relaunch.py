@@ -51,7 +51,7 @@ class Relauncher:
 
     def relaunch(self, top_dir):
         top_dir = os.path.abspath(top_dir)
-        for exp_dir in glob(os.path.join(top_dir, "*")):
+        for exp_dir in sorted(glob(os.path.join(top_dir, "*"))):
             qsub_file = os.path.join(exp_dir, "qsub-script_000.sh")
             
             # Check that the DONE file is not present
