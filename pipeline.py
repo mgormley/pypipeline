@@ -42,7 +42,7 @@ def create_queue_command(script_file, cwd, name="test", prereqs=[], stdout="stdo
     queue_command += " -cwd -j y -b y -V -N %s -e stderr -o %s " % (name, stdout)        
     if len(prereqs) > 0:
         queue_command += "-hold_jid %s " % (",".join(prereqs))
-    queue_command += "\"echo JOB_ID=$JOB_ID && bash '%s'\"" % (script_file)
+    queue_command += "\"bash '%s'\"" % (script_file)
     return queue_command
 
 unique_num = 0
