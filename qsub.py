@@ -14,12 +14,17 @@ def _get_clsp_qsub_args(threads, work_mem_megs):
     return " -q all.q -pe smp %d -l cpu_arch=x86_64,mem_free=%dM,ram_free=%dM " % (threads, work_mem_megs)
 
 def get_qsub_args(queue, threads, work_mem_megs, minutes):
-    time = str(datetime.timedelta(minutes=minutes))
+    time = get_mins_as_hrt_str(minutes)
     if queue is not None and queue.startswith("clsp-"):
         return _get_clsp_qsub_args(threads, work_mem_megs)
     else:
         return _get_wisp_qsub_args("all.q", threads, work_mem_megs, time)
     
+def get_mins_as_hrt_str(total_mins):
+    hours, minutes = divmod(total_mins, 60)
+    seconds = 0
+    return "%02d:%02d:%02d" % (hours, minutes, seconds)
+
 def get_default_qsub_params(queue):
     '''Gets the default threads, work_mem_megs, and minutes for a named queue.'''
     minutes = 8*60
@@ -30,19 +35,19 @@ def get_default_qsub_params(queue):
         threads = 1
         work_mem_megs = 2048
     elif queue == "cpu2x":            
-        threads = 2
+        threads = 4
         work_mem_megs = 4096
     elif queue == "mem128":  
-        threads = 1
+        threads = 2
         work_mem_megs = 120000
     elif queue == "himem":  
-        threads = 1
+        threads = 2
         work_mem_megs = 16384
     elif queue == "mem":  
-        threads = 1
+        threads = 2
         work_mem_megs = 8192
     else: # queue == "cpu"
-        threads = 1
+        threads = 2
         work_mem_megs = 2048
 
     return (threads, work_mem_megs, minutes)
