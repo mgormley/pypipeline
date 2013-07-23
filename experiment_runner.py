@@ -256,7 +256,7 @@ class JavaExpParams(ExpParams):
         java_args += " -Xms%dm -Xmx%dm " % (work_mem_megs, work_mem_megs)
         java_args += " -XX:MaxPermSize=%dm " % (max_perm_size)
         # Added to ensure parallel garbage collection is NOT running.
-        java_args += " -XX:-UseParallelGC -XX:-UseParNewGC ÐXX:+UseSerialGC"
+        java_args += " -XX:-UseParallelGC -XX:-UseParNewGC -XX:+UseSerialGC"
         # Alt1: -XX:ParallelGCThreads=<N> -XX:+UseParallelGC
         # Alt2: -XX:ConcGCThreads=<N> -XX:+UseConcMarkSweepGC -XX:+CMSIncrementalMode        
         
