@@ -35,19 +35,19 @@ def get_default_qsub_params(queue):
         threads = 1
         work_mem_megs = 2048
     elif queue == "cpu2x":            
-        threads = 2
+        threads = 4
         work_mem_megs = 4096
     elif queue == "mem128":  
-        threads = 1
+        threads = 2
         work_mem_megs = 120000
     elif queue == "himem":  
-        threads = 1
+        threads = 2
         work_mem_megs = 16384
     elif queue == "mem":  
-        threads = 1
+        threads = 2
         work_mem_megs = 8192
     else: # queue == "cpu"
-        threads = 1
+        threads = 2
         work_mem_megs = 2048
 
     return (threads, work_mem_megs, minutes)
