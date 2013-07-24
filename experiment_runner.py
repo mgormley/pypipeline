@@ -238,6 +238,8 @@ class JavaExpParams(ExpParams):
     def __init__(self, dictionary=None, **keywords):
         dictionary.update(keywords)
         ExpParams.__init__(self,dictionary)
+        self.hprof = None
+        self.set("java_args", "", incl_arg=False, incl_name=False)
             
     def get_java_args(self):
         return self._get_java_args(self.work_mem_megs)
@@ -250,7 +252,7 @@ class JavaExpParams(ExpParams):
         # Subtract off some overhead for the PermSize
         max_perm_size = 128
         work_mem_megs -= max_perm_size
-        assert(work_mem_megs >= 256)
+        assert work_mem_megs >= 256, "work_mem_megs=%f" % (work_mem_megs)
         
         java_args = " -server -ea -Dfile.encoding=UTF8 "
         java_args += " -Xms%dm -Xmx%dm " % (work_mem_megs, work_mem_megs)
@@ -259,6 +261,17 @@ class JavaExpParams(ExpParams):
         java_args += " -XX:-UseParallelGC -XX:-UseParNewGC -XX:+UseSerialGC"
         # Alt1: -XX:ParallelGCThreads=<N> -XX:+UseParallelGC
         # Alt2: -XX:ConcGCThreads=<N> -XX:+UseConcMarkSweepGC -XX:+CMSIncrementalMode        
+        
+        if self.hprof == "cpu":
+            self.update(java_args = self.get("java_args") + " -agentlib:hprof=cpu=samples,depth=7,interval=2 ")
+        elif self.hprof == "heap":
+            self.update(java_args = self.get("java_args") + " -agentlib:hprof=heap=sites,depth=7 ")
+        else:
+            raise Exception("Unknown argument for hprof: " + self.hprof)
+                
+        extra_java_args = self.get("java_args")
+        if extra_java_args is not None:
+            java_args += " " + extra_java_args
         
         return java_args
     
