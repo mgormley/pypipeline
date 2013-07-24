@@ -18,7 +18,7 @@ def get_qsub_args(queue, threads, work_mem_megs, minutes):
     if queue is not None and queue.startswith("clsp-"):
         return _get_clsp_qsub_args(threads, work_mem_megs)
     else:
-        return _get_wisp_qsub_args("all.q", threads, work_mem_megs, time)
+        return _get_wisp_qsub_args("text.q", threads, work_mem_megs, time)
     
 def get_mins_as_hrt_str(total_mins):
     hours, minutes = divmod(total_mins, 60)
