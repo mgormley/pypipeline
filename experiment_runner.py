@@ -266,7 +266,7 @@ class JavaExpParams(ExpParams):
             self.update(java_args = self.get("java_args") + " -agentlib:hprof=cpu=samples,depth=7,interval=2 ")
         elif self.hprof == "heap":
             self.update(java_args = self.get("java_args") + " -agentlib:hprof=heap=sites,depth=7 ")
-        else:
+        elif self.hprof is not None:
             raise Exception("Unknown argument for hprof: " + self.hprof)
                 
         extra_java_args = self.get("java_args")
