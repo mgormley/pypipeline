@@ -51,6 +51,20 @@ def get_unique_name(name):
     unique_num += 1
     return name + str(unique_num)
 
+def get_cd_to_bash_script_parent():
+    return """
+    # Change directory to the parent directory of the calling bash script.
+    SOURCE="${BASH_SOURCE[0]}"
+    while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
+      DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+      SOURCE="$(readlink "$SOURCE")"
+      [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE" # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
+    done
+    DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+    echo "Changing directory to $DIR"
+    cd $DIR
+    """
+
 class Stage:
     '''A stage in a pipeline to be run after the stages in prereqs and before the 
     stages in dependents.
@@ -136,6 +150,9 @@ class Stage:
         # script += "ulimit -v %d\n" % (1024 * self.work_mem_megs)
         # script += "\n"
         
+        # Always change directory to the current location of this experiment script.    
+        script += get_cd_to_bash_script_parent()
+        
         script += self.create_stage_script(exp_dir)
         # TODO: this is a hack. This should create another script that calls the experiment
         # script, not modify it.
@@ -185,9 +202,12 @@ class Stage:
             #Old way: subprocess.check_call(shlex.split(command))
         else:
             prereq_names = [prereq.get_qsub_name() for prereq in self.prereqs]
-            qsub_script = create_queue_command(script_file, cwd, self.get_qsub_name(), prereq_names, stdout_path, self.qsub_args)
+            qsub_script = ""
+            qsub_script += get_cd_to_bash_script_parent() + "\n"
+            qsub_cmd = create_queue_command(script_file, cwd, self.get_qsub_name(), prereq_names, stdout_path, self.qsub_args)
+            qsub_script += qsub_cmd
             qsub_script_file = write_script("qsub-script", qsub_script, cwd)
-            print qsub_script
+            print qsub_cmd
             subprocess.check_call(shlex.split("bash %s" % (qsub_script_file)))
             qdel_script = "qdel %s" % (self.get_qsub_name())
             self.qdel_script_file = write_script("qdel-script", qdel_script, cwd)
