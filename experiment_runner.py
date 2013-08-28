@@ -263,7 +263,7 @@ class JavaExpParams(ExpParams):
         # Alt2: -XX:ConcGCThreads=<N> -XX:+UseConcMarkSweepGC -XX:+CMSIncrementalMode        
         
         if self.hprof == "cpu":
-            self.update(java_args = self.get("java_args") + " -agentlib:hprof=cpu=samples,depth=7,interval=2 ")
+            self.update(java_args = self.get("java_args") + " -agentlib:hprof=cpu=samples,depth=7,interval=10 ")
         elif self.hprof == "heap":
             self.update(java_args = self.get("java_args") + " -agentlib:hprof=heap=sites,depth=7 ")
         elif self.hprof is not None:
