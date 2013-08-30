@@ -33,6 +33,10 @@ def get_files_in_dir(dirname):
     return [f for f in os.listdir(dirname) if os.path.isfile(os.path.join(dirname, f))]
 
 def create_queue_command(script_file, cwd, name="test", prereqs=[], stdout="stdout", qsub_args=None):
+    # Make the stdout file and script_file relative paths to cwd if possible.
+    stdout = os.path.relpath(stdout, cwd)
+    script_file = os.path.relpath(script_file, cwd)
+    # Create the qsub command.
     queue_command = "qsub "
     if qsub_args:
         queue_command += " " + qsub_args + " "
