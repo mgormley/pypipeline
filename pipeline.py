@@ -76,6 +76,7 @@ class Stage:
     Attributes:
         cwd: Current working directory for this stage (Set by PipelineRunner).
         serial: True iff this stage will be run in a pipeline using bash, one stage at a time (Set by PipelineRunner).
+        dry_run: Whether to just do a dry run which will skip the actual running of script in _run_script() (Set by PipelineRunner).
         root_dir: Path to root directory for this project (Set by PipelineRunner).
         work_mem_megs: Megabytes required by this stage (Default provided by PipelineRunner). 
         threads: Number of threads used by this stage (Default provided by PipelineRunner).
@@ -182,6 +183,7 @@ class Stage:
         if self.serial:
             command = "bash %s" % (script_file)
             print self.get_name(),":",command
+            if self.dry_run: return
             stdout = open(stdout_path, 'w')
             if not self.print_to_console:
                 # Print stdout only to a file.
@@ -212,6 +214,7 @@ class Stage:
             qsub_script += qsub_cmd
             qsub_script_file = write_script("qsub-script", qsub_script, cwd)
             print qsub_cmd
+            if self.dry_run: return
             subprocess.check_call(shlex.split("bash %s" % (qsub_script_file)))
             qdel_script = "qdel %s" % (self.get_qsub_name())
             self.qdel_script_file = write_script("qdel-script", qdel_script, cwd)
@@ -345,12 +348,13 @@ class RootStage(NamedStage):
 
 class PipelineRunner:
     
-    def __init__(self,name="experiments", queue=None, print_to_console=False, rolling=False):
+    def __init__(self,name="experiments", queue=None, print_to_console=False, dry_run=False, rolling=False):
         self.name = name
         self.serial = (queue == None)
         self.root_dir = os.path.abspath(".") 
         self.print_to_console = print_to_console
         self.rolling = rolling
+        self.dry_run = dry_run
         
         # Setup arguments for qsub
         self.queue = queue
@@ -389,6 +393,7 @@ class PipelineRunner:
         '''Set some additional parameters on the stage.'''
         stage.cwd = cwd
         stage.serial = self.serial
+        stage.dry_run = self.dry_run
         stage.root_dir = self.root_dir
         # Use defaults for threads, work_mem_megs, and minutes if they are not
         # set on the stage.

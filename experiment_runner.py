@@ -313,8 +313,8 @@ def shorten_names(expparams):
 
 class ExpParamsRunner(PipelineRunner):
     
-    def __init__(self,name, queue, print_to_console=False):
-        PipelineRunner.__init__(self, name, queue, print_to_console)
+    def __init__(self,name, queue, print_to_console=False, dry_run=False):
+        PipelineRunner.__init__(self, name, queue, print_to_console, dry_run)
 
     def run_experiments(self, exp_stages):
         root_stage = RootStage()
