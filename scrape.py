@@ -263,7 +263,7 @@ class Scraper:
         exp_orderer = self.get_exp_params_instance()
         for exp in exp_list:
             exp_orderer = exp_orderer.concat(exp)
-        exp_orderer.get_initial_keys = lambda : self.get_column_order()
+        exp_orderer.get_initial_keys = lambda : self.get_column_order(exp_list)
         key_order = exp_orderer.get_name_key_order()
     
         # Order rows
@@ -286,7 +286,7 @@ class Scraper:
         ''' OVERRIDE THIS METHOD: return an ExpParams object '''
         return None
 
-    def get_column_order(self):
+    def get_column_order(self, exp_list):
         ''' OVERRIDE THIS METHOD: return a list of column header strings '''
         return []
     
