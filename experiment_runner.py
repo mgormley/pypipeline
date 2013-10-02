@@ -101,10 +101,20 @@ class ExpParams(Stage):
             
     def set(self, key, value, incl_name=True, incl_arg=True):
         self.params[key] = value
+        self.set_incl_name(key, incl_name)
+        self.set_incl_arg(key, incl_arg)
+    
+    def set_incl_name(self, key, incl_name):
         if not incl_name:
             self.exclude_name_keys.add(key)
+        elif key in self.exclude_name_keys:
+            self.exclude_name_keys.remove(key)
+        
+    def set_incl_arg(self, key, incl_arg):
         if not incl_arg:
             self.exclude_arg_keys.add(key)
+        elif key in self.exclude_arg_keys:
+            self.exclude_arg_keys.remove(key)
     
     def remove(self, key):
         if key in self.params:
