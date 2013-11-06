@@ -271,7 +271,7 @@ class JavaExpParams(ExpParams):
         # Read more on garbage collection parameters here:
         #     http://www.oracle.com/technetwork/java/javase/gc-tuning-6-140523.html#cms
         threads = self.get("threads")
-        if threads <= 0:
+        if threads <= 1:
             # Added to ensure parallel garbage collection is NOT running.
             java_args += " -XX:-UseParallelGC -XX:-UseParNewGC -XX:+UseSerialGC"
         else:
