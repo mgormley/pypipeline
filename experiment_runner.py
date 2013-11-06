@@ -267,10 +267,21 @@ class JavaExpParams(ExpParams):
         java_args = " -server -ea -Dfile.encoding=UTF8 "
         java_args += " -Xms%dm -Xmx%dm " % (work_mem_megs, work_mem_megs)
         java_args += " -XX:MaxPermSize=%dm " % (max_perm_size)
-        # Added to ensure parallel garbage collection is NOT running.
-        java_args += " -XX:-UseParallelGC -XX:-UseParNewGC -XX:+UseSerialGC"
-        # Alt1: -XX:ParallelGCThreads=<N> -XX:+UseParallelGC
-        # Alt2: -XX:ConcGCThreads=<N> -XX:+UseConcMarkSweepGC -XX:+CMSIncrementalMode        
+        
+        # Read more on garbage collection parameters here:
+        #     http://www.oracle.com/technetwork/java/javase/gc-tuning-6-140523.html#cms
+        threads = self.get("threads")
+        if threads <= 0:
+            # Added to ensure parallel garbage collection is NOT running.
+            java_args += " -XX:-UseParallelGC -XX:-UseParNewGC -XX:+UseSerialGC"
+        else:
+            # Alt1: java_args += " -XX:ParallelGCThreads=%d -XX:+UseParallelGC -XX:+UseParallelOldGC" % (threads)
+            # Alt2: java_args += " -XX:ConcGCThreads=%d -XX:+UseConcMarkSweepGC -XX:+CMSIncrementalMode" % (threads)
+            #
+            # Alt1 is best if throughput is the most important and pauses of up to 1 second
+            # are acceptable. This is almost always true of experiments.      
+            java_args += " -XX:ParallelGCThreads=%d -XX:+UseParallelGC -XX:+UseParallelOldGC" % (threads)
+        #java_args += " -verbose:gc"
         
         if self.hprof == "cpu":
             self.update(java_args = self.get("java_args") + " -agentlib:hprof=cpu=samples,depth=7,interval=10 ")
