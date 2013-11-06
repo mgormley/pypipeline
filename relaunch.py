@@ -61,6 +61,7 @@ class Relauncher:
             # Check that the job is not already running
             job_name = get_job_name(qsub_file)
             if is_running(job_name):
+                print "Running: ", job_name
                 self.running_count += 1
                 continue
 
