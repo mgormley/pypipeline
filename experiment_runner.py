@@ -169,7 +169,7 @@ class ExpParams(Stage):
         ''' Returns a string consisting of the arguments defined by the parameters of this experiment '''
         args = ""
         # Add the key/value arguments.
-        for key,value in self.params.items():
+        for key,value in sorted(self.params.items()):
             if key not in self.exclude_arg_keys and not key.startswith(self.dummy_key_prefix):
                 if value is None:
                     args += "--%s " % (self._get_as_str(key))
