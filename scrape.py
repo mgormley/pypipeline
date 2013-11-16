@@ -15,7 +15,6 @@ from .util import get_all_following, get_following, get_time,\
 from .google_spreadsheets import get_spreadsheet_by_title,\
     get_first_worksheet, clear_worksheet, write_row
 import getpass
-import gdata.spreadsheet.service
 
 class ResultsWriter:
     
@@ -106,6 +105,9 @@ class RprojResultsWriter(CsvResultsWriter):
 class GoogleResultsWriter(CsvResultsWriter):
     
     def __init__(self):
+        # Only import if we're using Google Spreadsheets        
+        import gdata.spreadsheet.service
+        
         CsvResultsWriter.__init__(self)
         # Get Password
         email = 'matthew.gormley@gmail.com'
