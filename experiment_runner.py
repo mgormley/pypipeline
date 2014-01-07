@@ -215,8 +215,14 @@ class ExpParams(Stage):
         return map(lambda x:map(self._get_as_str, x), sps)
     
     def get_name_key_order(self):
+        '''Gets the order anew or the cached name key order if present.'''
         if self.key_order:
             return self.key_order
+        else:
+            return self._get_name_key_order()
+    
+    def _get_name_key_order(self):
+        '''Creates and returns the name key order.'''
         key_order = []
         initial_keys = self.get_initial_keys()
         all_keys = sorted(self.params.keys())
@@ -312,8 +318,16 @@ class PythonExpParams(ExpParams):
         ''' OVERRIDE THIS METHOD '''
         return PythonExpParams()
 
-def shorten_names(expparams):
-    ''' Shortens the names of a set of expparams '''
+def get_all_keys(expparams):
+    '''Gets the set of all keys for these expparams.'''
+    all_keys = set()
+    for expparam in expparams:
+        for key,_ in expparam.params.items():
+            all_keys.add(key)
+    return all_keys    
+
+def get_nonunique_keys(expparams):
+    '''Gets the set of nonunique keys for these expparams.'''
     key2vals = defaultdict(set)
     for expparam in expparams:
         for key,value in expparam.params.items():
@@ -323,14 +337,31 @@ def shorten_names(expparams):
     for key in key2vals:
         if len(key2vals[key]) > 1:
             nonunique_keys.add(key)
+    return nonunique_keys
+    
+def get_kept_keys(expparams):
+    '''Gets the union of the nonunique keys and the initial keys specified by the ExpParams.'''
+    nonunique_keys = get_nonunique_keys(expparams)
     
     kept_keys = set()
     kept_keys.update(nonunique_keys)
     for expparam in expparams:
         kept_keys.update(set(expparam.get_initial_keys()))
 
+    return kept_keys
+
+def get_exclude_name_keys(expparams):
+    '''Gets all the keys which are excluded from the name of some ExpParam.'''
+    excluded = set()
     for expparam in expparams:
-        expparam.key_order = filter(lambda x: x in kept_keys, expparam.get_name_key_order())
+        excluded = excluded.union(expparam.exclude_name_keys)
+    return excluded
+    
+def shorten_names(expparams):
+    '''Shortens the names of a set of expparams.'''
+    kept_keys = get_kept_keys(expparams)
+    for expparam in expparams:
+        expparam.key_order = filter(lambda x: x in kept_keys, expparam._get_name_key_order())
 
 class ExpParamsRunner(PipelineRunner):
     
