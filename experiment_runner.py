@@ -271,7 +271,7 @@ class JavaExpParams(ExpParams):
         assert work_mem_megs >= 256, "work_mem_megs=%f" % (work_mem_megs)
         
         java_args = " -server -ea -Dfile.encoding=UTF8 "
-        java_args += " -Xms%dm -Xmx%dm " % (work_mem_megs, work_mem_megs)
+        java_args += " -Xms%dm -Xmx%dm -Xss4m" % (work_mem_megs, work_mem_megs)
         java_args += " -XX:MaxPermSize=%dm " % (max_perm_size)
         
         # Read more on garbage collection parameters here:
