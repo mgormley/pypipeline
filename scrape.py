@@ -12,8 +12,6 @@ from optparse import OptionParser
 from glob import glob
 from .util import get_all_following, get_following, get_time,\
     to_str, get_following_literal, tail
-from .google_spreadsheets import get_spreadsheet_by_title,\
-    get_first_worksheet, clear_worksheet, write_row
 import getpass
 from experiments.core.experiment_runner import get_nonunique_keys,\
     get_exclude_name_keys, get_all_keys
@@ -108,7 +106,9 @@ class GoogleResultsWriter(CsvResultsWriter):
     
     def __init__(self):
         # Only import if we're using Google Spreadsheets        
-        import gdata.spreadsheet.service
+        import gdata.spreadsheet.service    
+        from .google_spreadsheets import get_spreadsheet_by_title,\
+            get_first_worksheet, clear_worksheet, write_row
         
         CsvResultsWriter.__init__(self)
         # Get Password
