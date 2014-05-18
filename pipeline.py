@@ -141,6 +141,7 @@ class Stage:
         return qsub_name
             
     def run_stage(self, exp_dir):
+        self.exp_dir = exp_dir
         os.chdir(exp_dir)
         if self._is_already_completed():
             print "Skipping completed stage: name=" + self.get_name() + " completion_indicator=" + self.completion_indicator
