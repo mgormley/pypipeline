@@ -56,13 +56,17 @@ class ExpParams(Stage):
         self.dummy_key_prefix = "__arg__"
         # The separator for key/value parameters in the argument string
         self.args_kvsep = " "
+        self.script_fns = []
             
     def create_stage_script(self, exp_dir):
         '''Creates and returns the experiment script and writes the expparams.txt file.
         Overriding method for Stage.
         '''
+        script = ""
+        for script_fns in self.script_fns:
+            script += script_fns(self, exp_dir)
         # Creates and returns the experiment script string. 
-        script = self.create_experiment_script(exp_dir)
+        script += self.create_experiment_script(exp_dir)
         # Write out the experiment parameters to a file
         # Do this after create_experiment_script in case there are additions to the parameters
         # made by that call.
@@ -263,13 +267,17 @@ class JavaExpParams(ExpParams):
     def _get_java_args(self, total_work_mem_megs):
         '''Returns reasonable JVM args based on the total megabytes available'''
         work_mem_megs = total_work_mem_megs
-        # Subtract off some overhead for the JVM
-        work_mem_megs -= 512
-        # Subtract off some overhead for the PermSize
-        max_perm_size = 128
-        work_mem_megs -= max_perm_size
-        assert work_mem_megs >= 256, "work_mem_megs=%f" % (work_mem_megs)
-        
+        if work_mem_megs >= 512+128+256:
+            # Subtract off some overhead for the JVM
+            work_mem_megs -= 512
+            # Subtract off some overhead for the PermSize
+            max_perm_size = 128
+            work_mem_megs -= max_perm_size
+            assert work_mem_megs >= 256, "work_mem_megs=%f" % (work_mem_megs)
+        else:
+            work_mem_megs -= 32
+            max_perm_size = 32
+            
         java_args = " -server -ea -Dfile.encoding=UTF8 "
         java_args += " -Xms%dm -Xmx%dm -Xss4m" % (work_mem_megs, work_mem_megs)
         java_args += " -XX:MaxPermSize=%dm " % (max_perm_size)
