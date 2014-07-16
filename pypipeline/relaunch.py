@@ -11,12 +11,12 @@ import shlex
 import subprocess
 from subprocess import Popen
 from optparse import OptionParser
-from util import get_new_file, sweep_mult, fancify_cmd,\
-    sweep_mult_low
 import platform
 from glob import glob
 import shutil
-from pipeline import write_script, RootStage, Stage
+from pypipeline.util import get_new_file, sweep_mult, fancify_cmd,\
+    sweep_mult_low
+from pypipeline.pipeline import write_script, RootStage, Stage
 
 def run_and_get_output(command):
     p = Popen(args=shlex.split(command), stderr=subprocess.PIPE, stdout=subprocess.PIPE)

@@ -10,10 +10,10 @@ import stat
 import subprocess
 from optparse import OptionParser
 from glob import glob
-from .util import get_all_following, get_following, get_time,\
-    to_str, get_following_literal, tail
 import getpass
-from experiments.core.experiment_runner import get_nonunique_keys,\
+from pypipeline.util import get_all_following, get_following, get_time,\
+    to_str, get_following_literal, tail
+from pypipeline.experiment_runner import get_nonunique_keys,\
     get_exclude_name_keys, get_all_keys
 
 class ResultsWriter:

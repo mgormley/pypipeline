@@ -13,13 +13,11 @@ import time
 import subprocess
 from subprocess import Popen
 import glob
-#import topsort
 import topological
 from util import get_new_directory
 from util import get_new_file
-from pipeline import Stage, PipelineRunner, RootStage
 from collections import defaultdict
-from experiments.core.pipeline import NamedStage
+from pypipeline.pipeline import Stage, PipelineRunner, RootStage, NamedStage
 
 def get_subset(expparams_list, **keywords):
     '''Gets the subset of ExpParams objects for which all the keywords specified

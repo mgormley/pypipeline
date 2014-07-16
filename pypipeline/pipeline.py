@@ -18,7 +18,7 @@ import topological
 from util import get_new_directory
 from util import get_new_file
 import random
-from experiments.core.qsub import get_default_qsub_params, get_qsub_args,\
+from pypipeline.qsub import get_default_qsub_params, get_qsub_args,\
     get_default_qsub_params
 
 def write_script(prefix, script, dir):
