@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 #
-# Example usage (to build an egg):
+# Example usage
+# - Install:
+#   python setup.py install
+# - Build an egg:
 #   python setup.py bdist_egg
 #
 # We use the setup tools import as opposed to the standard "from
@@ -10,10 +13,10 @@
 from setuptools import setup
 
 setup(
-    name='experiments-core',
+    name='pypipeline',
     version='0.1',
-    description='Experiment running library',
+    description='Python scripts for running pipelines of experiments locally or on Sun Grid Engine.',
     author='Matt Gormley',
     author_email='mrg@cs.jhu.edu',
     url='http://www.cs.jhu.edu/~mrg/',
-    packages=['experiments', 'experiments.core'])
+    packages=['pypipeline'])
