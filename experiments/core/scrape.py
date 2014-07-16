@@ -12,10 +12,9 @@ from optparse import OptionParser
 from glob import glob
 from .util import get_all_following, get_following, get_time,\
     to_str, get_following_literal, tail
-from .google_spreadsheets import get_spreadsheet_by_title,\
-    get_first_worksheet, clear_worksheet, write_row
 import getpass
-import gdata.spreadsheet.service
+from experiments.core.experiment_runner import get_nonunique_keys,\
+    get_exclude_name_keys, get_all_keys
 
 class ResultsWriter:
     
@@ -106,6 +105,11 @@ class RprojResultsWriter(CsvResultsWriter):
 class GoogleResultsWriter(CsvResultsWriter):
     
     def __init__(self):
+        # Only import if we're using Google Spreadsheets        
+        import gdata.spreadsheet.service    
+        from .google_spreadsheets import get_spreadsheet_by_title,\
+            get_first_worksheet, clear_worksheet, write_row
+        
         CsvResultsWriter.__init__(self)
         # Get Password
         email = 'matthew.gormley@gmail.com'
@@ -203,7 +207,8 @@ class Scraper:
     
     def scrape_exp_dirs(self, exp_dirs):
         # Read experiment directories
-        exp_list = []
+        orig_list = [] # List of original expparams objects (used for column ordering).
+        exp_list = []  # List of extracted expparams objects.
         for exp_dir in sorted(exp_dirs):
             try:
                 # Read name
@@ -215,11 +220,12 @@ class Scraper:
                 
                 stdout_file = os.path.join(exp_dir,"stdout")
                 done_file = os.path.join(exp_dir,"DONE")
-
+                is_done = os.path.exists(done_file)
+                    
                 if self.remain_only:
                     # Really we should only print those that are not completed.
                     # But this is commented out so that we can read off elapsed times as well.
-                    #if os.path.exists(done_file):
+                    #if is_done:
                     #    exp_list.pop()
                     #    continue
                     stdout_lines = self.read_stdout_lines(stdout_file)
@@ -231,7 +237,11 @@ class Scraper:
                 else:
                     # Read experiment parameters
                     exp.read(os.path.join(exp_dir, "expparams.txt"))
+                    # Append the original parameters
+                    orig_list.append(exp + self.get_exp_params_instance())
+                    
                     exp.update(exp_dir=exp_dir)
+                    exp.update(is_done=is_done)
                     # Read stdout
                     self.scrape_errors(exp, exp_dir, stdout_file)
                     self.scrape_exp(exp, exp_dir, stdout_file)
@@ -260,10 +270,11 @@ class Scraper:
                     exp.set(key.replace("old:",""), value, False, False)
         
         # Choose column header order
+        initial_keys = ["exp_dir", "is_done"]
         exp_orderer = self.get_exp_params_instance()
         for exp in exp_list:
             exp_orderer = exp_orderer.concat(exp)
-        exp_orderer.get_initial_keys = lambda : self.get_column_order()
+        exp_orderer.get_initial_keys = lambda : self._get_column_order(initial_keys, orig_list, exp_list)
         key_order = exp_orderer.get_name_key_order()
     
         # Order rows
@@ -281,12 +292,31 @@ class Scraper:
         # Close any open files.
         for f in self.closeables:
             f.close()
-
+        
+    def _get_column_order(self, initial_keys, orig_list, exp_list):
+        order = []
+        added = set()
+        nonunique_keys = get_nonunique_keys(orig_list)
+        exclude_name_keys = get_exclude_name_keys(orig_list)
+        initial_set = nonunique_keys - exclude_name_keys
+        orig_set = get_all_keys(orig_list)
+        result_set = get_all_keys(exp_list) - orig_set
+        
+        unfiltered = initial_keys + list(initial_set) + ["BLANK_COLUMN1"] + self.get_column_order(exp_list) + \
+                       ["BLANK_COLUMN2"] + sorted(list(result_set)) + sorted(list(orig_set))
+        
+        for key in unfiltered:
+            if key not in added:
+                order.append(key)
+                added.add(key)
+                
+        return order
+        
     def get_exp_params_instance(self):
         ''' OVERRIDE THIS METHOD: return an ExpParams object '''
         return None
 
-    def get_column_order(self):
+    def get_column_order(self, exp_list):
         ''' OVERRIDE THIS METHOD: return a list of column header strings '''
         return []
     

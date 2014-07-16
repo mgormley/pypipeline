@@ -33,6 +33,10 @@ def get_files_in_dir(dirname):
     return [f for f in os.listdir(dirname) if os.path.isfile(os.path.join(dirname, f))]
 
 def create_queue_command(script_file, cwd, name="test", prereqs=[], stdout="stdout", qsub_args=None):
+    # Make the stdout file and script_file relative paths to cwd if possible.
+    stdout = os.path.relpath(stdout, cwd)
+    script_file = os.path.relpath(script_file, cwd)
+    # Create the qsub command.
     queue_command = "qsub "
     if qsub_args:
         queue_command += " " + qsub_args + " "
@@ -51,6 +55,20 @@ def get_unique_name(name):
     unique_num += 1
     return name + str(unique_num)
 
+def get_cd_to_bash_script_parent():
+    return """
+    # Change directory to the parent directory of the calling bash script.
+    SOURCE="${BASH_SOURCE[0]}"
+    while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
+      DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+      SOURCE="$(readlink "$SOURCE")"
+      [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE" # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
+    done
+    DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+    echo "Changing directory to $DIR"
+    cd $DIR
+    """
+
 class Stage:
     '''A stage in a pipeline to be run after the stages in prereqs and before the 
     stages in dependents.
@@ -58,6 +76,7 @@ class Stage:
     Attributes:
         cwd: Current working directory for this stage (Set by PipelineRunner).
         serial: True iff this stage will be run in a pipeline using bash, one stage at a time (Set by PipelineRunner).
+        dry_run: Whether to just do a dry run which will skip the actual running of script in _run_script() (Set by PipelineRunner).
         root_dir: Path to root directory for this project (Set by PipelineRunner).
         work_mem_megs: Megabytes required by this stage (Default provided by PipelineRunner). 
         threads: Number of threads used by this stage (Default provided by PipelineRunner).
@@ -122,6 +141,7 @@ class Stage:
         return qsub_name
             
     def run_stage(self, exp_dir):
+        self.exp_dir = exp_dir
         os.chdir(exp_dir)
         if self._is_already_completed():
             print "Skipping completed stage: name=" + self.get_name() + " completion_indicator=" + self.completion_indicator
@@ -135,6 +155,9 @@ class Stage:
         # TODO: ulimit doesn't work on Mac OS X or the COE (wisp). So we disable it here.
         # script += "ulimit -v %d\n" % (1024 * self.work_mem_megs)
         # script += "\n"
+        
+        # Always change directory to the current location of this experiment script.    
+        script += get_cd_to_bash_script_parent()
         
         script += self.create_stage_script(exp_dir)
         # TODO: this is a hack. This should create another script that calls the experiment
@@ -161,6 +184,7 @@ class Stage:
         if self.serial:
             command = "bash %s" % (script_file)
             print self.get_name(),":",command
+            if self.dry_run: return
             stdout = open(stdout_path, 'w')
             if not self.print_to_console:
                 # Print stdout only to a file.
@@ -185,9 +209,13 @@ class Stage:
             #Old way: subprocess.check_call(shlex.split(command))
         else:
             prereq_names = [prereq.get_qsub_name() for prereq in self.prereqs]
-            qsub_script = create_queue_command(script_file, cwd, self.get_qsub_name(), prereq_names, stdout_path, self.qsub_args)
+            qsub_script = ""
+            qsub_script += get_cd_to_bash_script_parent() + "\n"
+            qsub_cmd = create_queue_command(script_file, cwd, self.get_qsub_name(), prereq_names, stdout_path, self.qsub_args)
+            qsub_script += qsub_cmd
             qsub_script_file = write_script("qsub-script", qsub_script, cwd)
-            print qsub_script
+            print qsub_cmd
+            if self.dry_run: return
             subprocess.check_call(shlex.split("bash %s" % (qsub_script_file)))
             qdel_script = "qdel %s" % (self.get_qsub_name())
             self.qdel_script_file = write_script("qdel-script", qdel_script, cwd)
@@ -321,12 +349,13 @@ class RootStage(NamedStage):
 
 class PipelineRunner:
     
-    def __init__(self,name="experiments", queue=None, print_to_console=False, rolling=False):
+    def __init__(self,name="experiments", queue=None, print_to_console=False, dry_run=False, rolling=False):
         self.name = name
         self.serial = (queue == None)
         self.root_dir = os.path.abspath(".") 
         self.print_to_console = print_to_console
         self.rolling = rolling
+        self.dry_run = dry_run
         
         # Setup arguments for qsub
         self.queue = queue
@@ -365,6 +394,7 @@ class PipelineRunner:
         '''Set some additional parameters on the stage.'''
         stage.cwd = cwd
         stage.serial = self.serial
+        stage.dry_run = self.dry_run
         stage.root_dir = self.root_dir
         # Use defaults for threads, work_mem_megs, and minutes if they are not
         # set on the stage.
