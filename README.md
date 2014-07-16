@@ -3,9 +3,12 @@ experiments locally or on Sun Grid Engine.
 
 Standard install: This will do a standard install of an egg with a fixed version.
 
-    python setup.py install
+    sudo python setup.py install
 
-Developer install: This install will just create a link to the source directory.
+Developer install for user: This install will just create a link to the source directory.
+    
+    python setup.py develop --user
 
+For a system wide developer install:
+    
     sudo pip install -e .
-
