@@ -8,3 +8,4 @@ Standard install:
 Developer install:
 
     sudo pip install -e .
+
