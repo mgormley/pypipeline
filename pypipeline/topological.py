@@ -3,8 +3,8 @@ import os, sys
 # License:
 # Permission is hereby granted to copy, modify and use the above source code for any purpose as long as the following comment line is included with it:
 # Original topological sort code written by Ofer Faigon (www.bitformation.com) and used with permission
-
-#From: http://www.bitformation.com/art/python_toposort.html
+#
+# From: http://www.bitformation.com/art/python_toposort.html
 def topological_sort(items, partial_order):
     """Perform topological sort.
        <i>items</i> is a list of items to be sorted.

@@ -4,37 +4,10 @@ import re
 
 # ------------------- File reading ------------------------
 
-def tail(filename, window=20):
-    ''' Copied from: 
-        http://stackoverflow.com/questions/136168/get-last-n-lines-of-a-file-with-python-similar-to-tail
-    '''
+def tail(filename, window=20):    
     f = open(filename, 'r')
-    BUFSIZ = 1024
-
-    # Go to the last byte in the file
-    f.seek(0, 2)
-    # Get the number of bytes in the file
-    bytes = f.tell()
-
-    size = window
-    block = -1
-    data = []
-    while size > 0 and bytes > 0:
-        if (bytes - BUFSIZ > 0):
-            # Seek back one whole BUFSIZ
-            f.seek(block*BUFSIZ, 2)
-            # read BUFFER
-            data.insert(0, f.read(BUFSIZ))
-        else:
-            # file too small, start from begining
-            f.seek(0,0)
-            # only read what was not read
-            data.insert(0, f.read(bytes))
-        linesFound = data[0].count('\n')
-        size -= linesFound
-        bytes -= BUFSIZ
-        block -= 1
-    return ''.join(data).splitlines()[-window:]
+    lines = f.readlines()
+    return lines[-window:]
 
 def head(filename, window=20):
     lines = []
