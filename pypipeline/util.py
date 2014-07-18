@@ -4,12 +4,32 @@ import re
 
 # ------------------- File reading ------------------------
 
-def tail(filename, window=20):    
-    f = open(filename, 'r')
-    lines = f.readlines()
+def tail(filename, window=20):
+    '''Returns the last window lines of a file.'''
+    num_lines = 0
+    all_chunks = ''
+    for chunk in reverse_byte_generator(filename):
+        num_lines = chunk.count('\n')
+        all_chunks = chunk + all_chunks
+        if num_lines >= window:
+            break
+    lines = all_chunks.splitlines(True)
     return lines[-window:]
 
+def reverse_byte_generator(filename):  
+    '''Generator for iterating over chunks of a file in reverse order.'''  
+    with open(filename, 'r') as f:
+        # Move to end of file. 2 indicates that we seek relative to the file's end.
+        f.seek(0,2) 
+        # Get number of bytes in file.
+        num_bytes = f.tell() 
+        bytes_to_read = 1024
+        for i in reversed(range(0, num_bytes, bytes_to_read)):
+            f.seek(i)
+            yield f.read(bytes_to_read)            
+
 def head(filename, window=20):
+    '''Returns the first window lines of a file.'''
     lines = []
     f = open(filename, 'r')
     for i,line in enumerate(f):
