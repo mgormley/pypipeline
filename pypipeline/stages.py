@@ -19,6 +19,19 @@ import re
 import random
 from pypipeline.pipeline import write_script, RootStage, Stage
 
+class StagePath:
+    '''Lazy constructor of relative paths for a stage'''
+    
+    def __init__(self, stage, rel_path):
+        self.stage = stage
+        self.rel_path = rel_path
+    
+    def __str__(self):
+        if not self.stage.exp_dir:
+            raise Exception("stage.exp_dir not initialized")
+        return os.path.join(self.stage.exp_dir, self.rel_path)
+
+
 def get_oome_stages(stage, max_mem=100*1000, max_doubles=4):
     '''Get a new list of stages which are copies of the given stage, 
     except that they double the working memory up to either max_mem, 
