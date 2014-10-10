@@ -264,7 +264,7 @@ class Scraper:
                 sys.stderr.write(str(e) + '\n')
                 traceback.print_exc()
 
-        self.process_all(exp_list)
+        self.process_all(orig_list, exp_list)
 
         # Drop the "old:" prefix for convenience on eval experiments:
         for exp in exp_list:
