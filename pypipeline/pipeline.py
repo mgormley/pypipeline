@@ -413,7 +413,11 @@ class PipelineRunner:
         all_stages = self.get_stages_as_list(root_stage)
         names = set()
         for stage in all_stages:
-            assert stage.get_name() not in names, "Multiple stages have the same name: " + stage.get_name() + "\n" + str([s.get_name() for s in all_stages])
+            if stage.get_name() in names:
+                print "ERROR: All stage names:\n" + "\n".join([s.get_name() for s in all_stages])
+                print "ERROR: Multiple stages have the same name: " + stage.get_name()
+                print "ERROR: Num copies:", len([x for x in all_stages if x.get_name() == stage.get_name()]) 
+                assert stage.get_name() not in names, "ERROR: Multiple stages have the same name: " + stage.get_name()
             names.add(stage.get_name())
         print "all_stages(names):",[stage.get_name() for stage in all_stages]
         print "num_stages:", len(all_stages)                    

@@ -55,7 +55,11 @@ class ExpParams(Stage):
         # The separator for key/value parameters in the argument string
         self.args_kvsep = " "
         self.script_fns = []
-            
+       
+    def __str__(self):
+        return "ExpParams[params=%s exclude_name_keys=%s exclude_arg_keys=%s]" % \
+            (str(self.params), str(self.exclude_name_keys), str(self.exclude_arg_keys))
+    
     def create_stage_script(self, exp_dir):
         '''Creates and returns the experiment script and writes the expparams.txt file.
         Overriding method for Stage.
