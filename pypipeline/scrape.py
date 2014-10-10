@@ -12,9 +12,9 @@ from optparse import OptionParser
 from glob import glob
 import getpass
 from pypipeline.util import get_all_following, get_following, get_time,\
-    to_str, get_following_literal, tail
+    to_str, get_following_literal, tail, get_group1
 from pypipeline.experiment_runner import get_nonunique_keys,\
-    get_exclude_name_keys, get_all_keys
+    get_exclude_name_keys, get_all_keys, ExpParams
 
 class ResultsWriter:
     
@@ -236,10 +236,14 @@ class Scraper:
                     exp_list.append(exp)
                 else:
                     # Read experiment parameters
-                    exp.read(os.path.join(exp_dir, "expparams.txt"))
+                    exp.read(os.path.join(exp_dir, "expparams.txt"))                
                     # Append the original parameters
-                    orig_list.append(exp + self.get_exp_params_instance())
-                    
+                    orig_list.append(exp + self.get_exp_params_instance())                    
+                    # Read the output parameters
+                    if os.path.exists("outparams.txt"):
+                        outp = self.get_exp_params_instance()
+                        outp.read(os.path.join(exp_dir, "outparams.txt"))
+                        exp += outp
                     exp.update(exp_dir=exp_dir)
                     exp.update(is_done=is_done)
                     # Read stdout
@@ -259,6 +263,8 @@ class Scraper:
                 import traceback
                 sys.stderr.write(str(e) + '\n')
                 traceback.print_exc()
+
+        self.process_all(exp_list)
 
         # Drop the "old:" prefix for convenience on eval experiments:
         for exp in exp_list:
@@ -311,10 +317,19 @@ class Scraper:
                 added.add(key)
                 
         return order
+    
+    def scrape_errors(self, exp, exp_dir, stdout_file):
+        ''' Optionally override this method '''
+        stdout_lines = tail(stdout_file, 500)
+        # Check for errors:
+        error = get_following(stdout_lines, "Exception in thread \"main\" ", -1, False)
+        if error == None: error = get_group1(stdout_lines, "(.*(Error|Exception):.*)", -1)
+        if error == None: error = get_group1(stdout_lines, "(.*[Ee]rror.*)", -1)
+        exp.update(error = error)
         
     def get_exp_params_instance(self):
         ''' OVERRIDE THIS METHOD: return an ExpParams object '''
-        return None
+        return ExpParams()
 
     def get_column_order(self, exp_list):
         ''' OVERRIDE THIS METHOD: return a list of column header strings '''
@@ -328,10 +343,6 @@ class Scraper:
         ''' OVERRIDE THIS METHOD: return a list of ExpParam objects '''
         return None
     
-    def scrape_errors(self, exp, exp_dir, stdout_file):
-        ''' Optionally override this method '''
-        stdout_lines = tail(stdout_file, 500)
-        # Check for errors:
-        error = get_following(stdout_lines, "Exception in thread \"main\" ", 0, False)
-        if error == None: error = get_following(stdout_lines, "Error ", 0, True)
-        exp.update(error = error)
+    def process_all(self, orig_list, exp_list):
+        ''' OVERRIDE THIS METHOD '''
+        pass
