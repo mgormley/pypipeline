@@ -14,3 +14,4 @@ link being installed to ~/.local/lib/python2.7/site-packages/
 For a system wide developer install:
     
     sudo pip install -e .
+    

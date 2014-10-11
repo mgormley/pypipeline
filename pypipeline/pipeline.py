@@ -240,95 +240,6 @@ class NamedStage(Stage):
     def get_name(self):
         return self._name
 
-class GridShardRunnerStage(NamedStage):
-
-    def __init__(self, name, input_shard_prefix, new_output_prefix=None, completion_indicator="DONE"):
-        NamedStage.__init__(self, name, completion_indicator)
-        # TODO: move this
-        self.files = self.get_files(input_shard_prefix)
-        self.input_shard_prefix = input_shard_prefix
-        self.new_output_prefix = new_output_prefix
-
-    def get_files(self, shard_prefix):
-        directory = os.path.dirname(shard_prefix)
-        prefix = os.path.basename(shard_prefix)
-        if directory == '':
-            directory = '.'
-        files = glob.glob(os.path.join(directory, prefix))
-        assert len(files) != 0, "No files matching shard_prefix: " + shard_prefix
-        files.sort()
-        return files
-
-    # TODO: Should this method be removed? Doesn't SGE and the topological sort
-    #   ensure that this will not run before its prereqs?
-    # TODO: should throw an exception if there's an error in a prereq
-    def wait_for_prereqs(self, prereqs):
-        prereqs_complete = False
-        while not prereqs_complete:
-            indicators = [os.path.exists(prereq.completion_indicator) for prereq in prereqs]
-            prereqs_complete = reduce(lambda x,y: x and y, indicators)
-            time.sleep(3)
-
-    def _run_stage(self, exp_dir):
-        #TODO: this could maybe be a Thread call (but adds complications for topological sort assumptions)
-        self.wait_for_prereqs(self.prereqs)
-        stages = self.get_shard_stages()
-        for stage in stages:
-            shard_exp_dir = os.path.join(exp_dir, "shard-%s" % (stage.name))
-            os.mkdir(shard_exp_dir)
-            stage.run_stage(shard_exp_dir)
-
-        self.prereqs.extend(stages)
-        Stage._run_stage(self, exp_dir)
-
-    def get_shard_stages(self):
-        stages = []
-        shard_number = 0
-        for input_file in self.files:
-            # Are there shard numbers?
-            matcher = re.compile('(\d+)\.shard').search(input_file)
-            if matcher:
-                # Get the shard number.
-                shard_number = matcher.group(1)
-                if self.new_output_prefix:
-                    new_shard = '%s_%s.shard' % (self.new_output_prefix, shard_number)
-            else:
-                shard_number += 1
-                if self.new_output_prefix:
-                    new_shard =  os.path.join(self.new_output_prefix, os.path.basename(input_file))
-
-            shard_stage = self.create_shard_stage(shard_number, input_file, new_shard)
-            stages.append(shard_stage)
-        return stages
-
-    def create_stage_script(self, cwd):
-        ''' Create a script that will do nothing. This will be run by Stage.run_stage(). '''
-        return ""
-
-    def create_shard_stage(self, shard_number, input_file, output_file):
-        name = "%s-%s" % (self.get_name(), str(shard_number))
-        return ShardStage(name, input_file, output_file, self) 
-
-    def create_shard_script(self, cwd, input_file, output_file):
-        ''' Override this method '''
-        #if self.new_output_prefix:
-        #    command = '%s' % (self.script_name.replace('%INPUT_SHARD%', input_file).replace('%OUTPUT_FILE%', new_shard))
-        #else:
-        #    command = '%s' % (self.script_name.replace('%INPUT_SHARD%', input_file))
-        return None
-
-class ShardStage(NamedStage):
-    '''Helper class for GridShardRunnerStage'''
-    
-    def __init__(self, name, input_file, output_file, grid_shard_runner_stage):
-        NamedStage.__init__(self, name)
-        self.input_file = input_file
-        self.output_file = output_file
-        self.grid_shard_runner_stage = grid_shard_runner_stage
-
-    def create_stage_script(self, cwd):
-        return self.grid_shard_runner_stage.create_shard_script(cwd, self.input_file, self.output_file)
-
 class ScriptStringStage(NamedStage):
     
     def __init__(self, name, script, completion_indicator="DONE"):
@@ -365,7 +276,7 @@ class PipelineRunner:
         self.minutes = minutes
         
     def run_pipeline(self, root_stage):
-        self.check_stages(root_stage)
+        self._check_stages(root_stage)
         top_dir = os.path.join(self.root_dir, "exp")
         if self.rolling:
             exp_dir = os.path.join(top_dir, self.name)
@@ -409,7 +320,7 @@ class PipelineRunner:
         # Get the stage's qsub args.
         stage.qsub_args = get_qsub_args(self.queue, stage.threads, stage.work_mem_megs, stage.minutes)
         
-    def check_stages(self, root_stage):
+    def _check_stages(self, root_stage):
         all_stages = self.get_stages_as_list(root_stage)
         names = set()
         for stage in all_stages:
