@@ -68,6 +68,27 @@ def get_cd_to_bash_script_parent():
     echo "Changing directory to $DIR"
     cd $DIR
     """
+    
+def dfs_stages(stage):
+    stages = set()
+    stages.add(stage)
+    #print "stage.name",stage.name
+    #print "stage.dependents",[x.name for x in stage.dependents]
+    for dependent in stage.dependents:
+        for s in dfs_stages(dependent):
+            if not s in stages:
+                stages.add(s)
+    return stages
+
+def bfs_stages(stage):
+    stages = set()
+    queue = [stage]
+    while queue != []:
+        stage = queue.pop(0)
+        if not stage in stages:
+            stages.add(stage)
+        queue.extend(stage.dependents)
+    return stages
 
 class Stage:
     '''A stage in a pipeline to be run after the stages in prereqs and before the 
@@ -330,38 +351,13 @@ class PipelineRunner:
                 print "ERROR: Num copies:", len([x for x in all_stages if x.get_name() == stage.get_name()]) 
                 assert stage.get_name() not in names, "ERROR: Multiple stages have the same name: " + stage.get_name()
             names.add(stage.get_name())
-        print "all_stages(names):",[stage.get_name() for stage in all_stages]
-        print "num_stages:", len(all_stages)                    
+        print "All stages:"
+        for stage in all_stages: 
+            print stage.get_name()
+        print "Number of stages:", len(all_stages)
             
     def get_stages_as_list(self, root_stage):
-        partial_order = []
-        all_stages = self.dfs_stages(root_stage)
-        for stage in all_stages:
-            for dependent in stage.dependents:
-                partial_order.append((stage, dependent))
-        #return topsort.topsort(partial_order)
-        return topological.topological_sort(all_stages, partial_order)
-
-    def dfs_stages(self, stage):
-        stages = []
-        stages.append(stage)
-        #print "stage.name",stage.name
-        #print "stage.dependents",[x.name for x in stage.dependents]
-        for dependent in stage.dependents:
-            for s in self.dfs_stages(dependent):
-                if not s in stages:
-                    stages.append(s)
-        return stages
-    
-    def bfs_stages(self, stage):
-        stages = []
-        queue = [stage]
-        while queue != []:
-            stage = queue.pop(0)
-            if not stage in stages:
-                stages.append(stage)
-            queue.extend(stage.dependents)
-        return stages
-
+        return topological.bfs_topo_sort(root_stage)
+        
 if __name__ == '__main__':
     print "This script is not to be run directly"

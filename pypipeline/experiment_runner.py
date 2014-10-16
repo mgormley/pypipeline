@@ -396,10 +396,6 @@ class ExpParamsRunner(PipelineRunner):
                 expparams.append(stage)
         shorten_names(expparams)
         
-    def get_stages_as_list(self, root_stage):
-        '''This method is overriden to give the provided order for experiments'''
-        return self.bfs_stages(root_stage)
-
 class ExperimentStage(NamedStage):
     '''Deprecated.'''
         
