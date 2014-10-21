@@ -7,7 +7,8 @@ from fabric.contrib.console import confirm
 from fabric.context_managers import prefix
 
 def init():
-    env.gateway = "%s:%s" % ("external.hltcoe.jhu.edu", "22")
+    env.use_ssh_config = True
+    #env.gateway = "%s:%s" % ("external.hltcoe.jhu.edu", "22")
     env.host_string = "%s:%s" % ("test2", "22")
     run("uname -a")
         
