@@ -353,7 +353,7 @@ class PipelineRunner:
             names.add(stage.get_name())
         print "All stages:"
         for stage in all_stages: 
-            print stage.get_name()
+            print "\t",stage.get_name()
         print "Number of stages:", len(all_stages)
             
     def get_stages_as_list(self, root_stage):
