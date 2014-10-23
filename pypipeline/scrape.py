@@ -155,6 +155,7 @@ class GoogleResultsWriter(CsvResultsWriter):
 def add_options(parser):
     '''Takes an OptionParser as input and adds the appropriate options for the Scraper'''
     parser.add_option('--remain', action="store_true", help="Scrape for time remaining only")
+    parser.add_option('--errors', action="store_true", help="Scrape for errors only")
     parser.add_option('--tsv_file', help="Out file for R-project")
     parser.add_option('--csv_file', help="Out file for CSV")
     parser.add_option('--google', action="store_true", help="Print out for Google Docs")
@@ -164,6 +165,7 @@ class Scraper:
     
     def __init__(self, options):
         self.remain_only = options.remain
+        self.errors_only = options.errors
         self.writers = []
         self.closeables = []
         if options.tsv_file:
@@ -233,6 +235,12 @@ class Scraper:
                     _, _, elapsed = get_time(stdout_lines)
                     exp.update(elapsed = elapsed)
                     exp.update(timeRemaining = get_following_literal(stdout_lines, "Time remaining: ", -1))
+                    exp_list.append(exp)
+                elif self.errors_only:
+                    stdout_lines = self.read_stdout_lines(stdout_file)
+                    exp.update(exp_dir=exp_dir)
+                    self.scrape_errors(exp, exp_dir, stdout_file)
+                    if exp.get("error") is None: continue
                     exp_list.append(exp)
                 else:
                     # Read experiment parameters
@@ -321,6 +329,9 @@ class Scraper:
     def scrape_errors(self, exp, exp_dir, stdout_file):
         ''' Optionally override this method '''
         stdout_lines = tail(stdout_file, 500)
+        # Skip errors from Shellshock fix for qsub.
+        stdout_lines = [x for x in stdout_lines if x.find("module: line 1: syntax error: unexpected end of file") == -1]
+        stdout_lines = [x for x in stdout_lines if x.find("error importing function definition for `BASH_FUNC_module'") == -1]
         # Check for errors:
         error = get_following(stdout_lines, "Exception in thread \"main\" ", -1, False)
         if error == None: error = get_group1(stdout_lines, "(.*(Error|Exception):.*)", -1)
