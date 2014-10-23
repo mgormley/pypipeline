@@ -248,7 +248,7 @@ class Scraper:
                     # Append the original parameters
                     orig_list.append(exp + self.get_exp_params_instance())                    
                     # Read the output parameters
-                    if os.path.exists("outparams.txt"):
+                    if os.path.exists(os.path.join(exp_dir, "outparams.txt")):
                         outp = self.get_exp_params_instance()
                         outp.read(os.path.join(exp_dir, "outparams.txt"))
                         exp += outp
