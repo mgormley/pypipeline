@@ -295,7 +295,9 @@ class JavaExpParams(ExpParams):
             # Alt2: java_args += " -XX:ConcGCThreads=%d -XX:+UseConcMarkSweepGC -XX:+CMSIncrementalMode" % (threads)
             #
             # Alt1 is best if throughput is the most important and pauses of up to 1 second
-            # are acceptable. This is almost always true of experiments.      
+            # are acceptable. This is almost always true of experiments. 
+            # Alt2 may cause issues on a grid as it could use too much parallelism, since the garbage collection
+            # runs concurrently with the other application threads.     
             java_args += " -XX:ParallelGCThreads=%d -XX:+UseParallelGC -XX:+UseParallelOldGC" % (threads)
         #java_args += " -verbose:gc"
         
