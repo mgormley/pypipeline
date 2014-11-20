@@ -27,7 +27,7 @@ class StagePath:
         self.rel_path = rel_path
     
     def __str__(self):
-        if not self.stage.exp_dir:
+        if not hasattr(self.stage, 'exp_dir'):
             raise Exception("stage.exp_dir not initialized")
         return os.path.join(self.stage.exp_dir, self.rel_path)
 
