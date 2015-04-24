@@ -10,3 +10,4 @@ tmp/
 # Python distribution files:
 /dist/
 /pypipeline.egg-info/
+/build/

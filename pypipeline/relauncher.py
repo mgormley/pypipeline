@@ -92,16 +92,4 @@ class Relauncher:
         pass
 
 if __name__ == "__main__":
-    usage = "%prog "
-
-    parser = OptionParser(usage=usage)
-    parser.add_option(    '--test', action="store_true", help="Run without actually launching anything")
-    (options, args) = parser.parse_args(sys.argv)
-
-    if len(args) <= 1:
-        parser.print_help()
-        sys.exit(1)
-
-    relauncher = Relauncher(options.test)
-    for arg in args[1:]:
-        relauncher.relaunch(arg)
+    pass
