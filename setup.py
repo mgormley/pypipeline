@@ -21,4 +21,5 @@ setup(
     url='http://www.cs.jhu.edu/~mrg/',
     packages=['pypipeline'],
     scripts=['scripts/relaunch.py'],
+    install_requires=['fabric'],
     )
