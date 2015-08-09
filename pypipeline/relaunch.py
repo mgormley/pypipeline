@@ -43,11 +43,12 @@ def is_running(job_name):
 
 class Relauncher:
 
-    def __init__(self, test):
+    def __init__(self, test, tries):
         self.relaunch_count = 0
         self.running_count = 0
         self.done_count = 0
         self.test = test
+        self.tries = tries
 
     def relaunch(self, top_dir):
         top_dir = os.path.abspath(top_dir)
@@ -55,8 +56,14 @@ class Relauncher:
             qsub_file = os.path.join(exp_dir, "qsub-script_000.sh")
             
             # Check that the DONE file is not present
-            if os.path.exists(os.path.join(exp_dir, "DONE")) or os.path.isfile(exp_dir):
+            if os.path.exists(os.path.join(exp_dir, "DONE")):
                 self.done_count += 1
+                continue
+            # Skip other cases that don't look like experiment directories.
+            if os.path.isfile(exp_dir):
+                continue
+            if not os.path.exists(qsub_file):
+                print "WARN: experiment directory missing qsub script:", exp_dir
                 continue
             # Check that the job is not already running
             job_name = get_job_name(qsub_file)
@@ -67,18 +74,24 @@ class Relauncher:
 
             self.relaunch_count += 1
             if not self.test:
-                print "Removing state: "
+                print "Removing stdout: "
                 # Remove stdout
                 os.system("rm -r %s" % (os.path.join(exp_dir, "stdout")))
-                # Remove state files
-                os.system("rm -r %s" % (os.path.join(exp_dir, "state.binary.*")))
+                # TODO: Remove state files
+                #os.system("rm -r %s" % (os.path.join(exp_dir, "state.binary.*")))
                 
                 # Relaunch
                 os.chdir(exp_dir)
                 print "Relaunching directory: ",exp_dir
                 cmd = "bash %s" % (qsub_file)
                 print cmd
-                subprocess.check_call(shlex.split(cmd))
+                for i in range(self.tries):
+                    if subprocess.call(shlex.split(cmd)) == 0:
+                        break
+                    elif i < self.tries-1:
+                        print "Failed to relaunch, trying again..."
+                    else:
+                        raise Exception("Command returned non-zero exit code: " + cmd)
             else:
                 print "Relaunching directory: ",exp_dir
 
@@ -96,12 +109,13 @@ if __name__ == "__main__":
 
     parser = OptionParser(usage=usage)
     parser.add_option(    '--test', action="store_true", help="Run without actually launching anything")
+    parser.add_option(    '--tries', type="int", default=1, help="Number of times to attempt launching (for use with unstable SGE)")
     (options, args) = parser.parse_args(sys.argv)
 
     if len(args) <= 1:
         parser.print_help()
         sys.exit(1)
 
-    relauncher = Relauncher(options.test)
+    relauncher = Relauncher(options.test, options.tries)
     for arg in args[1:]:
         relauncher.relaunch(arg)
