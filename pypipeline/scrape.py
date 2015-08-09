@@ -211,10 +211,13 @@ class Scraper:
         # Read experiment directories
         orig_list = [] # List of original expparams objects (used for column ordering).
         exp_list = []  # List of extracted expparams objects.
-        for exp_dir in sorted(exp_dirs):
+        for i,exp_dir in enumerate(sorted(exp_dirs)):
             try:
                 # Read name
                 name = os.path.basename(exp_dir)
+                if name.startswith("scrape_") or name.startswith("hyperparam_argmax"):
+                    sys.stderr.write("Skipping %s\n" % (name))
+                    continue
                 sys.stderr.write("Reading %s\n" % (name))
                 sys.stderr.flush()
 
@@ -272,7 +275,7 @@ class Scraper:
                 sys.stderr.write(str(e) + '\n')
                 traceback.print_exc()
 
-        self.process_all(orig_list, exp_list)
+        exp_list = self.process_all(orig_list, exp_list)
 
         # Drop the "old:" prefix for convenience on eval experiments:
         for exp in exp_list:
@@ -356,4 +359,4 @@ class Scraper:
     
     def process_all(self, orig_list, exp_list):
         ''' OVERRIDE THIS METHOD '''
-        pass
+        return exp_list
