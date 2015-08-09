@@ -31,6 +31,10 @@ def prep_project_py(name, check_local=True):
     install_cmd = "python setup.py develop --user"
     prep_project_git(name, install_cmd, check_local)
 
+def prep_project_make(name, make_cmd, check_local=True):
+    install_cmd = "make %s" % (make_cmd)
+    prep_project_git(name, install_cmd, check_local)
+
 def run_command(name, argv):
     args = " ".join(argv[1:])
     with cd("~/working/%s" % (name)):

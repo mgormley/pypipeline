@@ -3,8 +3,8 @@
 # Example usage
 # - Install:
 #   python setup.py install
-# - Build an egg:
-#   python setup.py bdist_egg
+# - Developer install
+#   python setup.py develop --user
 #
 # We use the setup tools import as opposed to the standard "from
 # distutils.core import setup" in order to add the bdist_egg command.
@@ -19,4 +19,7 @@ setup(
     author='Matt Gormley',
     author_email='mrg@cs.jhu.edu',
     url='http://www.cs.jhu.edu/~mrg/',
-    packages=['pypipeline'])
+    packages=['pypipeline'],
+    scripts=['scripts/relaunch.py'],
+    install_requires=['fabric'],
+    )
