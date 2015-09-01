@@ -170,20 +170,19 @@ class Stage:
         self._run_stage(exp_dir)
         
     def _run_stage(self, exp_dir):
-        ''' Overidden by GridShardRunnerStage '''        
-        # TODO: This should create another script that calls the experiment
-        # script, not modify it.
+        ''' Overidden by GridShardRunnerStage '''
+        script = ""
         
-        script = ""        
         # TODO: ulimit doesn't work on Mac OS X or the COE (wisp). So we disable it here.
         # script += "ulimit -v %d\n" % (1024 * self.work_mem_megs)
         # script += "\n"
         
         # Always change directory to the current location of this experiment script.    
         script += get_cd_to_bash_script_parent()
-        # Add the execution.
+        
         script += self.create_stage_script(exp_dir)
-        # Touch a file to indicate successful completion.
+        # TODO: this is a hack. This should create another script that calls the experiment
+        # script, not modify it.
         script += "\ntouch '%s'\n" % (self.completion_indicator)        
         script_file = write_script("experiment-script", script, exp_dir)
         self._run_script(script_file, exp_dir)
@@ -285,7 +284,7 @@ class PipelineRunner:
     def __init__(self,name="experiments", queue=None, print_to_console=False, dry_run=False, rolling=False):
         self.name = name
         self.serial = (queue == None)
-        self.root_dir = os.path.abspath(".")
+        self.root_dir = os.path.abspath(".") 
         self.print_to_console = print_to_console
         self.rolling = rolling
         self.dry_run = dry_run
