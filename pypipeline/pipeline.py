@@ -57,17 +57,17 @@ def get_unique_name(name):
 
 def get_cd_to_bash_script_parent():
     return """
-    # Change directory to the parent directory of the calling bash script.
-    SOURCE="${BASH_SOURCE[0]}"
-    while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
-      DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
-      SOURCE="$(readlink "$SOURCE")"
-      [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE" # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
-    done
-    DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
-    echo "Changing directory to $DIR"
-    cd $DIR
-    """
+# Change directory to the parent directory of the calling bash script.
+SOURCE="${BASH_SOURCE[0]}"
+while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
+  DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+  SOURCE="$(readlink "$SOURCE")"
+  [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE" # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
+done
+DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+echo "Changing directory to $DIR"
+cd $DIR
+"""
     
 def dfs_stages(stage):
     stages = set()
@@ -99,6 +99,7 @@ class Stage:
         serial: True iff this stage will be run in a pipeline using bash, one stage at a time (Set by PipelineRunner).
         dry_run: Whether to just do a dry run which will skip the actual running of script in _run_script() (Set by PipelineRunner).
         root_dir: Path to root directory for this project (Set by PipelineRunner).
+        setupenv: Path to setupenv.sh script for setting environment (Set by PipelineRunner).
         work_mem_megs: Megabytes required by this stage (Default provided by PipelineRunner). 
         threads: Number of threads used by this stage (Default provided by PipelineRunner).
         minutes: Number of minutes used by this stage (Default provided by PipelineRunner).
@@ -119,7 +120,8 @@ class Stage:
         self.dependents = []
         self.cwd = None
         self.serial = False
-        self.root_dir = None        
+        self.root_dir = None
+        self.setupenv = None
         self.work_mem_megs = None
         self.threads = None
         self.minutes = None
@@ -170,19 +172,22 @@ class Stage:
         self._run_stage(exp_dir)
         
     def _run_stage(self, exp_dir):
-        ''' Overidden by GridShardRunnerStage '''
-        script = ""
-        
-        # TODO: ulimit doesn't work on Mac OS X or the COE (wisp). So we disable it here.
+        ''' Overidden by GridShardRunnerStage '''        
+        # TODO: This should create another script that calls the experiment
+        # script, not modify it.
+        #  
+        # ulimit doesn't work on Mac OS X or the COE (wisp). So we don't use it anymore.
         # script += "ulimit -v %d\n" % (1024 * self.work_mem_megs)
         # script += "\n"
         
+        script = ""
         # Always change directory to the current location of this experiment script.    
         script += get_cd_to_bash_script_parent()
-        
+        # Source the setupenv.sh script.
+        script += "source %s\n\n" % (self.setupenv)
+        # Add the execution.
         script += self.create_stage_script(exp_dir)
-        # TODO: this is a hack. This should create another script that calls the experiment
-        # script, not modify it.
+        # Touch a file to indicate successful completion.
         script += "\ntouch '%s'\n" % (self.completion_indicator)        
         script_file = write_script("experiment-script", script, exp_dir)
         self._run_script(script_file, exp_dir)
@@ -284,7 +289,12 @@ class PipelineRunner:
     def __init__(self,name="experiments", queue=None, print_to_console=False, dry_run=False, rolling=False):
         self.name = name
         self.serial = (queue == None)
-        self.root_dir = os.path.abspath(".") 
+        self.root_dir = os.path.abspath(".")
+        self.setupenv = os.path.abspath("./setupenv.sh")
+        if not os.path.exists(self.setupenv):
+            print "ERROR: File not found:", self.setupenv
+            print "ERROR: The file setupenv.sh must be located in the current working directory"
+            sys.exit(1)
         self.print_to_console = print_to_console
         self.rolling = rolling
         self.dry_run = dry_run
@@ -328,6 +338,7 @@ class PipelineRunner:
         stage.serial = self.serial
         stage.dry_run = self.dry_run
         stage.root_dir = self.root_dir
+        stage.setupenv = self.setupenv
         # Use defaults for threads, work_mem_megs, and minutes if they are not
         # set on the stage.
         if stage.threads is None:
