@@ -32,6 +32,29 @@ class StagePath:
         return os.path.join(self.stage.exp_dir, self.rel_path)
 
 
+class ScrapeExps(experiment_runner.PythonExpParams):
+    
+    def __init__(self, **keywords):
+        experiment_runner.PythonExpParams.__init__(self,keywords)
+        self.always_relaunch()
+
+    def get_initial_keys(self):
+        return []
+    
+    def get_instance(self):
+        return ScrapeExps()
+    
+    def get_name(self):
+        return "scrape_exps"
+    
+    def create_experiment_script(self, exp_dir):
+        self.add_arg(os.path.dirname(exp_dir))
+        script = ""
+        cmd = "scrape_exps.py %s\n" % (self.get_args())
+        script += fancify_cmd(cmd)
+        return script
+    
+    
 def get_oome_stages(stage, max_mem=100*1000, max_doubles=4):
     '''Get a new list of stages which are copies of the given stage, 
     except that they double the working memory up to either max_mem, 

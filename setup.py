@@ -20,6 +20,7 @@ setup(
     author_email='mrg@cs.jhu.edu',
     url='http://www.cs.jhu.edu/~mrg/',
     packages=['pypipeline'],
-    scripts=['scripts/relaunch.py'],
+    scripts=['scripts/relaunch.py',
+             'scripts/scrape_exps.py'],
     install_requires=['fabric'],
     )
