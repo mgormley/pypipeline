@@ -112,7 +112,7 @@ class GoogleResultsWriter(CsvResultsWriter):
         
         CsvResultsWriter.__init__(self)
         # Get Password
-        email = 'matthew.gormley@gmail.com'
+        email = input("Enter email address for Google Spreadsheet: ")
         print "Enter password for",email
         password = getpass.getpass()
         
