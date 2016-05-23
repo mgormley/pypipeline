@@ -14,11 +14,20 @@ from setuptools import setup
 
 setup(
     name='pypipeline',
-    version='0.1',
+    version='0.1.0',
     description='Python scripts for running pipelines of experiments locally or on Sun Grid Engine.',
+    long_description='Python scripts for running pipelines of experiments locally or on Sun Grid Engine.',
     author='Matt Gormley',
     author_email='mrg@cs.jhu.edu',
-    url='http://www.cs.jhu.edu/~mrg/',
+    url='https://github.com/mgormley/pypipeline',
+    license='MIT',
+    classifiers=[
+        'License :: OSI Approved :: MIT License',
+        'Development Status :: 3 - Alpha',
+        'Intended Audience :: Developers',
+        'Topic :: Software Development :: Build Tools',
+        'Programming Language :: Python :: 2.7',
+    ],
     packages=['pypipeline'],
     scripts=['scripts/relaunch.py',
              'scripts/scrape_exps.py'],
