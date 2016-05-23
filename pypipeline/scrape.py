@@ -59,7 +59,6 @@ class CsvResultsWriter(ResultsWriter):
         self.writeln('"' + lines.replace("\n"," ") + '"')
         
     def write_error(self, exp_dir):
-        # TODO: should we post this to Google Spreadsheet?
         self.writeln(self.sep.join(map(to_str,[exp_dir,"ERROR"])))
        
     def write_results(self, key_order, values_list, get_as_str):
@@ -101,56 +100,7 @@ class RprojResultsWriter(CsvResultsWriter):
         
     def write_error(self, exp_dir):
         sys.stderr.write(self.sep.join(map(to_str,[exp_dir,"ERROR"])) + "\n")
-           
-class GoogleResultsWriter(CsvResultsWriter):
-    
-    def __init__(self):
-        # Only import if we're using Google Spreadsheets        
-        import gdata.spreadsheet.service    
-        from .google_spreadsheets import get_spreadsheet_by_title,\
-            get_first_worksheet, clear_worksheet, write_row
         
-        CsvResultsWriter.__init__(self)
-        # Get Password
-        email = input("Enter email address for Google Spreadsheet: ")
-        print "Enter password for",email
-        password = getpass.getpass()
-        
-        # Establish connection            
-        self.gd_client = gdata.spreadsheet.service.SpreadsheetsService()
-        self.gd_client.email = email
-        self.gd_client.password = password
-        self.gd_client.source = 'exampleCo-exampleApp-1'
-        self.gd_client.ProgrammaticLogin()
-
-        # Get the worksheet
-        self.skey = get_spreadsheet_by_title(self.gd_client, "Temporary Results")
-        print "Spreadsheet key:",self.skey
-        self.wksht_id = get_first_worksheet(self.gd_client, self.skey)
-        print "Worksheet id:",self.wksht_id
-        
-        # Clear the worksheet
-        clear_worksheet(self.gd_client, self.skey, self.wksht_id)
-        self.row_num = 1
-        #TODO: Use self.gd_client.UpdateWorksheet(worksheet_entry) to update the num_rows/num_cols automatically
-        
-    def write_row(self, row):
-        write_row(self.gd_client, self.skey, self.wksht_id, self.row_num, row) 
-        self.row_num += 1    
-        
-    def _write_results(self, key_order, values_list, get_as_str):
-        sys.stderr.write("Writing to Google Spreadsheet...\n")
-        # Update the worksheet
-        self.write_row(key_order)
-        for values in values_list:
-            self.write_row(values)
-        
-    def write_readme(self, lines):
-        pass
-    
-    def write_error(self, exp_dir):
-        pass
-    
     
 def add_options(parser):
     '''Takes an OptionParser as input and adds the appropriate options for the Scraper'''
@@ -158,7 +108,6 @@ def add_options(parser):
     parser.add_option('--errors', action="store_true", help="Scrape for errors only")
     parser.add_option('--tsv_file', help="Out file for R-project")
     parser.add_option('--csv_file', help="Out file for CSV")
-    parser.add_option('--google', action="store_true", help="Print out for Google Docs")
 
 
 class Scraper:
@@ -176,8 +125,6 @@ class Scraper:
             csv_out = open(options.csv_file, 'w')
             self.writers.append(CsvResultsWriter(csv_out))
             self.closeables.append(csv_out)
-        if options.google:
-            self.writers.append(GoogleResultsWriter())
         if len(self.writers) == 0: 
             self.writers.append(RprojResultsWriter(sys.stdout))
 

@@ -8,7 +8,6 @@ from fabric.context_managers import prefix
 
 def init():
     env.use_ssh_config = True
-    # Alternative: env.gateway = "%s:%s" % ("external.hltcoe.jhu.edu", "22")
     env.host_string = "%s:%s" % ("test3", "22")
     run("uname -a")
         
