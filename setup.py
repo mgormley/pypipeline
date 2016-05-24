@@ -11,6 +11,11 @@
 #
 
 from setuptools import setup
+import codecs
+
+def read_description(filename):
+    with codecs.open(filename, encoding='utf-8') as f:
+        return f.read()
 
 setup(
     name='pypipeline',
