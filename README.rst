@@ -1,9 +1,11 @@
-# PyPipeline
+PyPipeline
+==========
 
 PyPipeline, a suite of python scripts for running pipelines of
 experiments locally or on Sun Grid Engine.
 
-## Installation
+Installation
+------------
 
 Standard install: This will install the latest version of pypipeline from PyPI.
 
@@ -11,7 +13,8 @@ Standard install: This will install the latest version of pypipeline from PyPI.
 
     pip install pypipeline
 
-## Development
+Development
+-----------
 
 If you are actively developing against the GitHub source, you may
 prefer a developer install.
