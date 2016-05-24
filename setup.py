@@ -33,5 +33,5 @@ setup(
     packages=['pypipeline'],
     scripts=['scripts/relaunch.py',
              'scripts/scrape_exps.py'],
-    install_requires=['fabric'],
+    install_requires=['fabric>=1.1.0,<2.0.0'],
     )

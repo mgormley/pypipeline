@@ -1,12 +1,20 @@
+# PyPipeline
+
 PyPipeline, a suite of python scripts for running pipelines of
 experiments locally or on Sun Grid Engine.
 
-Standard install: This will do a standard install of an egg with a fixed
-version.
+## Installation
+
+Standard install: This will install the latest version of pypipeline from PyPI.
 
 ::
 
-    sudo python setup.py install
+    pip install pypipeline
+
+## Development
+
+If you are actively developing against the GitHub source, you may
+prefer a developer install.
 
 Developer install for user: This install will just create a link to the
 source directory. On a typical system this will result in the egg link
