@@ -16,7 +16,7 @@ setup(
     name='pypipeline',
     version='0.1.1',
     description='Python scripts for running pipelines of experiments locally or on Sun Grid Engine.',
-    long_description='Python scripts for running pipelines of experiments locally or on Sun Grid Engine.',
+    long_description=read_description('README.rst'),
     author='Matt Gormley',
     author_email='mrg@cs.jhu.edu',
     url='https://github.com/mgormley/pypipeline',
