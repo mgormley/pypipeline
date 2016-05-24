@@ -14,7 +14,7 @@ from setuptools import setup
 
 setup(
     name='pypipeline',
-    version='0.1.0',
+    version='0.1.1',
     description='Python scripts for running pipelines of experiments locally or on Sun Grid Engine.',
     long_description='Python scripts for running pipelines of experiments locally or on Sun Grid Engine.',
     author='Matt Gormley',
